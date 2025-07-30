@@ -2,22 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  @keyframes gradient-x {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  .animate-gradient-x {
-    background-size: 200% 200%;
-    animation: gradient-x 6s ease infinite;
-  }
-}
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -134,11 +118,23 @@
 
 @layer base {
   * {
-     @apply border-border outline-ring; 
+    @apply border-border;
+    outline-color: rgb(var(--ring) / 0.5);
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Dropdown and Popover z-index fix */
+  [data-radix-popper-content-wrapper] {
+    z-index: 9999 !important;
+  }
+
+  /* Ensure dropdown menus appear above other content */
+  [role="menu"],
+  [data-state="open"][data-side] {
+    z-index: 9999 !important;
   }
 
   /* Simple animations */
