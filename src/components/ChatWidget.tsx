@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,54 +7,54 @@ import { MessageCircle, X, Send, Sparkles } from "lucide-react";
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleToggle = useCallback(() => {
+  setIsOpen(prev => !prev);
+}, []);
+
+  const handleSendMessage = useCallback(() => {
+    alert('AI Chat coming soon! This will connect to an AI assistant to help you with portfolio building, design questions, and career advice.');
+  }, []);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  }, [handleSendMessage]);
+
   return (
     <>
       {/* Chat Button */}
-      <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.3, delay: 1 }}
-        className="fixed bottom-6 right-6 z-50"
-      >
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={handleToggle}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 border-0 hover:scale-105"
         >
-          <Button
-            onClick={() => setIsOpen(!isOpen)}
-            className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 border-0"
-          >
-            <AnimatePresence mode="wait">
-              {isOpen ? (
-                <motion.div
-                  key="close"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <X className="w-6 h-6 text-white" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="chat"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="relative"
-                >
-                  <MessageCircle className="w-6 h-6 text-white" />
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Button>
-        </motion.div>
+          <AnimatePresence mode="wait">
+            {isOpen ? (
+              <motion.div
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X className="w-6 h-6 text-white" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="chat"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="relative"
+              >
+                <MessageCircle className="w-6 h-6 text-white" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Button>
 
         {/* Floating tooltip */}
         <AnimatePresence>
@@ -63,7 +63,7 @@ export function ChatWidget() {
               initial={{ opacity: 0, x: 20, scale: 0.8 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 20, scale: 0.8 }}
-              transition={{ duration: 0.3, delay: 2 }}
+              transition={{ duration: 0.3 }}
               className="absolute right-16 bottom-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap"
             >
               <div className="flex items-center gap-2">
@@ -71,12 +71,11 @@ export function ChatWidget() {
                 <span className="text-sm font-medium">Ask anything!</span>
               </div>
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 translate-x-full">
-                <div className="w-2 h-2 bg-white dark:bg-gray-800 rotate-45 border-r border-b border-gray-200 dark:border-gray-700"></div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Chat Window */}
       <AnimatePresence>
@@ -104,12 +103,7 @@ export function ChatWidget() {
                 <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900/50">
                   <div className="space-y-4">
                     {/* Welcome Message */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                      className="flex items-start gap-3"
-                    >
+                    <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0">
                         <Sparkles className="w-4 h-4 text-white" />
                       </div>
@@ -127,7 +121,7 @@ export function ChatWidget() {
                           What would you like to know?
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
 
@@ -138,17 +132,11 @@ export function ChatWidget() {
                       type="text"
                       placeholder="Type your message..."
                       className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          alert('AI Chat coming soon! This will connect to an AI assistant to help you with portfolio building, design questions, and career advice.');
-                        }
-                      }}
+                      onKeyPress={handleKeyPress}
                     />
                     <Button
                       size="sm"
-                      onClick={() => {
-                        alert('AI Chat coming soon! This will connect to an AI assistant to help you with portfolio building, design questions, and career advice.');
-                      }}
+                      onClick={handleSendMessage}
                       className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-3 py-2"
                     >
                       <Send className="w-4 h-4" />

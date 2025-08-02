@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "./components/Navigation";
 import { HomePage } from "./components/HomePage";
 import { LoginPage } from "./components/LoginPage";
@@ -14,6 +14,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [user, setUser] = useState<User | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [changedSections, setChangedSections] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -27,20 +28,11 @@ export default function App() {
     }
   }, []);
 
-  const handleNavigate = (page: string) => {
-    if (hasUnsavedChanges && currentPage === 'profile') {
-      const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to leave this page? Your changes will be lost."
-      );
-      if (!confirmed) {
-        return;
-      }
-      setHasUnsavedChanges(false);
-    }
+  const handleNavigate = useCallback((page: string) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handleTemplateSelect = (templateId: string) => {
+  const handleTemplateSelect = useCallback((templateId: string) => {
     if (user && portfolioDataManager.isProfileComplete(user)) {
       const data = portfolioDataManager.generateFromUser(user);
       setPortfolioData(data);
@@ -49,18 +41,18 @@ export default function App() {
       setCurrentPage('portfolio-viewer');
       console.log('Generated portfolio data from user:', data);
     }
-  };
+  }, [user]);
 
-  const handleTemplatePreview = (templateId: string) => {
+  const handleTemplatePreview = useCallback((templateId: string) => {
     const dummyData = portfolioDataManager.getDummyData(templateId);
     setPortfolioData(dummyData);
     setSelectedTemplate(templateId);
     setIsPreviewMode(true);
     setCurrentPage('portfolio-viewer');
     console.log('Using dummy data for preview:', dummyData);
-  };
+  }, []);
 
-  const handleTemplateSwitch = (templateId: string) => {
+  const handleTemplateSwitch = useCallback((templateId: string) => {
     setSelectedTemplate(templateId);
     if (isPreviewMode) {
       // Update with new dummy data when in preview mode
@@ -71,50 +63,44 @@ export default function App() {
       const userData = portfolioDataManager.generateFromUser(user);
       setPortfolioData(userData);
     }
-  };
+  }, [isPreviewMode, user]);
 
-  const handleBackToGallery = () => {
+  const handleBackToGallery = useCallback(() => {
     setCurrentPage('portfolios');
     setSelectedTemplate(null);
     setPortfolioData(null);
     setIsPreviewMode(false);
-  };
+  }, []);
 
-  const handleLogin = (userData: User) => {
+  const handleLogin = useCallback((userData: User) => {
     setUser(userData);
     portfolioDataManager.saveUserData(userData);
     setCurrentPage('profile'); // Navigate to profile after login
-  };
+  }, []);
 
-  const handleSignup = (userData: User) => {
+  const handleSignup = useCallback((userData: User) => {
     setUser(userData);
     portfolioDataManager.saveUserData(userData);
     setCurrentPage('profile'); // Navigate to profile after signup
-  };
+  }, []);
 
-  const handleLogout = () => {
-    if (hasUnsavedChanges && currentPage === 'profile') {
-      const confirmed = window.confirm(
-        "You have unsaved changes. Are you sure you want to logout? Your changes will be lost."
-      );
-      if (!confirmed) {
-        return;
-      }
-    }
+  const handleLogout = useCallback(() => {
     setUser(null);
     setCurrentPage('home');
     setHasUnsavedChanges(false);
+    setChangedSections([]);
     setSelectedTemplate(null);
     setPortfolioData(null);
     setIsPreviewMode(false);
     // Clear localStorage data
     localStorage.removeItem('portfolio_user_data');
     localStorage.removeItem('portfolio_exported_data');
-  };
+  }, []);
 
-  const handleUpdateProfile = (updatedUser: User) => {
+  const handleUpdateProfile = useCallback((updatedUser: User) => {
     setUser(updatedUser);
     setHasUnsavedChanges(false);
+    setChangedSections([]);
     
     // Save to localStorage using data manager
     portfolioDataManager.saveUserData(updatedUser);
@@ -124,11 +110,12 @@ export default function App() {
       const newData = portfolioDataManager.generateFromUser(updatedUser);
       setPortfolioData(newData);
     }
-  };
+  }, [currentPage, isPreviewMode]);
 
-  const handleProfileChange = () => {
-    setHasUnsavedChanges(true);
-  };
+  const handleProfileChange = useCallback((sections: string[]) => {
+    setHasUnsavedChanges(sections.length > 0);
+    setChangedSections(sections);
+  }, []);
 
   // Add beforeunload listener for unsaved changes
   useEffect(() => {
@@ -202,6 +189,7 @@ export default function App() {
           onUpdateProfile={handleUpdateProfile}
           onProfileChange={handleProfileChange}
           hasUnsavedChanges={hasUnsavedChanges}
+          changedSections={changedSections}
         />
       )}
       
