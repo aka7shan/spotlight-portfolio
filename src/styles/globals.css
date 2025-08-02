@@ -126,6 +126,21 @@
     @apply bg-background text-foreground;
   }
 
+    /* Fixed header spacing utilities */
+  .header-offset {
+    padding-top: 4rem; /* 64px - height of navigation */
+  }
+
+  .sticky-header {
+    position: sticky;
+    top: 4rem; /* 64px - height of navigation */
+    z-index: 30;
+    background: rgba(var(--background), 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(var(--border), 1);
+  }
+
+  
   /* Dropdown and Popover z-index fix */
   [data-radix-popper-content-wrapper] {
     z-index: 9999 !important;
