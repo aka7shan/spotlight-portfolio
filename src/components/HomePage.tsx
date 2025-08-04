@@ -670,7 +670,7 @@ export function HomePage({ onNavigate, user }: HomePageProps) {
                       size="lg" 
                       variant="outline"
                       onClick={() => onNavigate('portfolios')}
-                      className="border-white/50 text-white hover:bg-white/10 backdrop-blur-sm transition-all duration-300 px-8"
+                      className="border-white/50 hover:bg-white/10 backdrop-blur-sm transition-all duration-300 px-8"
                     >
                       Browse Templates
                       <ArrowRight className="w-4 h-4 ml-2" />

@@ -137,7 +137,7 @@ export function ChatWidget() {
                     <Button
                       size="sm"
                       onClick={handleSendMessage}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-3 py-2"
+                       className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-3 py-2"
                     >
                       <Send className="w-4 h-4" />
                     </Button>
