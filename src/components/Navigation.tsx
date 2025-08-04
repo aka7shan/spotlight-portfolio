@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback} from "react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { 
@@ -24,29 +24,65 @@ interface NavigationProps {
   onNavigate: (page: string) => void;
   user?: User | null;
   onLogout?: () => void;
+  onNavigationRequest?: (page: string) => void; // New prop for handling navigation with unsaved changes
 }
 
-export function Navigation({ currentPage, onNavigate, user, onLogout }: NavigationProps) {
+export function Navigation({ 
+  currentPage, 
+  onNavigate, 
+  user, 
+  onLogout,
+  onNavigationRequest 
+}: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'portfolios', label: 'Templates' },
   ];
 
+
+  // Use navigation request handler if available, otherwise use direct navigation
+  const handleNavigation = useCallback((page: string) => {
+    if (onNavigationRequest) {
+      onNavigationRequest(page);
+    } else {
+      onNavigate(page);
+    }
+  }, [onNavigate, onNavigationRequest]);
+
   const handleMobileNavClick = useCallback((itemId: string) => {
-    onNavigate(itemId);
+    handleNavigation(itemId);
     setIsMobileMenuOpen(false);
-  }, [onNavigate]);
+  }, [handleNavigation]);
 
   const handleMobileAuthClick = useCallback((action: string) => {
     if (action === 'logout') {
       onLogout?.();
     } else {
-      onNavigate(action);
+      handleNavigation(action);
     }
     setIsMobileMenuOpen(false);
-  }, [onNavigate, onLogout]);
+  }, [handleNavigation, onLogout]);
+
+  const handleLogoClick = useCallback(() => {
+    handleNavigation('home');
+  }, [handleNavigation]);
+
+  const handleProfileClick = useCallback(() => {
+    handleNavigation('profile');
+    setIsDropdownOpen(false); // Close dropdown after navigation
+  }, [handleNavigation]);
+
+  const handleLogoutClick = useCallback(() => {
+    onLogout?.();
+    setIsDropdownOpen(false); // Close dropdown after logout
+  }, [onLogout]);
+
+  const handleDropdownOpenChange = useCallback((open: boolean) => {
+    setIsDropdownOpen(open);
+  }, []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
@@ -55,7 +91,7 @@ export function Navigation({ currentPage, onNavigate, user, onLogout }: Navigati
           {/* Logo */}
           <div
             className="flex items-center cursor-pointer"
-            onClick={() => onNavigate('home')}
+            onClick={handleLogoClick}
           >
             <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mr-3">
               <Palette className="w-5 h-5 text-white" />
@@ -73,7 +109,7 @@ export function Navigation({ currentPage, onNavigate, user, onLogout }: Navigati
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id)}
+                onClick={() => handleNavigation(item.id)}
                 className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                   currentPage === item.id
                     ? 'text-primary border-b-2 border-primary'
@@ -89,7 +125,7 @@ export function Navigation({ currentPage, onNavigate, user, onLogout }: Navigati
           <div className="flex items-center space-x-4">
             {user ? (
               // Authenticated User Menu
-              <DropdownMenu>
+              <DropdownMenu open={isDropdownOpen} onOpenChange={handleDropdownOpenChange}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <ImageWithFallback
@@ -104,6 +140,10 @@ export function Navigation({ currentPage, onNavigate, user, onLogout }: Navigati
                   align="end" 
                   forceMount
                   sideOffset={5}
+                  onCloseAutoFocus={(e) => {
+                    // Prevent focus trap and allow normal scrolling
+                    e.preventDefault();
+                  }}
                 >
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
@@ -119,12 +159,12 @@ export function Navigation({ currentPage, onNavigate, user, onLogout }: Navigati
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onNavigate('profile')}>
+                  <DropdownMenuItem onClick={handleProfileClick}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onLogout} className="text-red-600">
+                  <DropdownMenuItem onClick={handleLogoutClick} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
                   </DropdownMenuItem>
@@ -135,13 +175,13 @@ export function Navigation({ currentPage, onNavigate, user, onLogout }: Navigati
               <div className="hidden md:flex items-center space-x-3">
                 <Button 
                   variant="ghost" 
-                  onClick={() => onNavigate('login')}
+                  onClick={() => handleNavigation('login')}
                   className="text-gray-600 hover:text-primary"
                 >
                   Login
                 </Button>
                 <Button 
-                  onClick={() => onNavigate('signup')}
+                  onClick={() => handleNavigation('signup')}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
                   Sign Up

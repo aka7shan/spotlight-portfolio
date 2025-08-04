@@ -1,22 +1,42 @@
 export interface User {
-    id: string;
-    name: string;
-    title?: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    about?: string;
-    avatar?: string;
-    skills?: string[];
-    experience?: Experience[];
-    education?: Education[];
-    projects?: Project[]; // Added projects to User type
-    certifications?: Certification[];
-    achievements?: Achievement[];
-    languages?: Language[];
-    createdAt?: string;
-    updatedAt?: string;
-  }
+  id: string;
+  name: string;
+  title?: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  about?: string;
+  avatar?: string;
+  coverImage?: string; // New: Cover image for profile header
+  skills?: string[];
+  experience?: Experience[];
+  education?: Education[];
+  projects?: Project[]; // Added projects to User type
+  certifications?: Certification[];
+  achievements?: Achievement[];
+  languages?: Language[];
+  cv?: CVData; // New: CV information
+  socialLinks?: SocialLinks; // New: Social media links
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CVData {
+  fileName?: string;
+  fileUrl?: string;
+  uploadDate?: string;
+  fileSize?: number;
+  fileType?: string;
+}
+
+export interface SocialLinks {
+  linkedin?: string;
+  github?: string;
+  twitter?: string;
+  website?: string;
+  dribbble?: string;
+  behance?: string;
+}
   
   export interface Experience {
     position: string;
