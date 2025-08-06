@@ -6,7 +6,7 @@ import {
     DialogTitle,
 } from "./ui/dialog";
 import { Badge } from "./ui/badge";
-import { AlertTriangle, Save, Trash2, X } from "lucide-react";
+import { AlertTriangle, Save, Trash2} from "lucide-react";
 
 interface UnsavedChangesDialogProps {
     isOpen: boolean;
