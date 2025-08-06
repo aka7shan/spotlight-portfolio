@@ -293,10 +293,7 @@ export function ProjectDialog({ open, onClose, onSave, mode, project }: ProjectD
             />
           </div>
         </div>
-
-        
-      </DialogContent>
-      <DialogFooter className="gap-2">
+<DialogFooter className="gap-2">
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
@@ -307,6 +304,8 @@ export function ProjectDialog({ open, onClose, onSave, mode, project }: ProjectD
             {mode === 'add' ? 'Add Project' : 'Save Changes'}
           </Button>
         </DialogFooter>
+      </DialogContent>
+      
     </Dialog>
   );
 }
