@@ -15,7 +15,6 @@ import {
   ExternalLink,
   Code,
   Terminal,
-  Zap,
   Database,
   Server,
   Monitor,
@@ -30,15 +29,12 @@ import {
   ChevronRight,
   GitBranch,
   Coffee,
-  Cpu,
   Eye,
   Play,
   BookOpen,
   Award,
   TrendingUp,
   Activity,
-  FileCode,
-  Layers
 } from "lucide-react";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import type { PortfolioProps } from "../../types/portfolio";
@@ -594,7 +590,7 @@ print(dev.code())`
                               </div>
                               <Badge className="w-fit bg-blue-500/20 text-blue-300 border-blue-500/30">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {exp.duration}
+                                {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {exp.isPresent ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
                               </Badge>
                             </div>
                             <p className="text-gray-300 leading-relaxed">{exp.description}</p>

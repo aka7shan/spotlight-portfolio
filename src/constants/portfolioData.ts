@@ -6,7 +6,7 @@ export const modernTechData: PortfolioData = {
     name: "Alex Chen",
     title: "Full Stack Developer & UI/UX Designer",
     email: "alex.chen@example.com",
-    phone: "+1 (555) 123-4567",
+    phone: "+15551234567",
     location: "San Francisco, CA",
     about: "Passionate full-stack developer with 5+ years of experience building scalable web applications. I love creating intuitive user experiences and writing clean, efficient code. Always excited to learn new technologies and solve complex problems.",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face"
@@ -21,19 +21,25 @@ export const modernTechData: PortfolioData = {
     {
       position: "Senior Full Stack Developer",
       company: "TechFlow Solutions",
-      duration: "2022 - Present",
+      startDate: "2022-03-01",
+      endDate: undefined,
+      isPresent: true,
       description: "Led development of microservices architecture serving 100K+ users. Built React dashboards, optimized database queries, and mentored 3 junior developers. Implemented CI/CD pipelines reducing deployment time by 60%."
     },
     {
       position: "Full Stack Developer",
       company: "StartupHub Inc",
-      duration: "2020 - 2022",
+      startDate: "2020-06-15",
+      endDate: "2022-02-28",
+      isPresent: false,
       description: "Developed and maintained 5+ web applications using React and Node.js. Collaborated with design team to implement responsive UI components. Reduced page load times by 40% through code optimization."
     },
     {
       position: "Frontend Developer",
       company: "Digital Creatives",
-      duration: "2019 - 2020",
+      startDate: "2019-09-01",
+      endDate: "2020-06-10",
+      isPresent: false,
       description: "Created interactive web experiences for major brands. Worked with React, Vue.js, and vanilla JavaScript. Implemented pixel-perfect designs and ensured cross-browser compatibility."
     }
   ],
@@ -127,7 +133,7 @@ export const creativeData: PortfolioData = {
     name: "Maya Rodriguez",
     title: "Creative Director & Visual Designer",
     email: "maya.rodriguez@studio.com",
-    phone: "+1 (555) 987-6543",
+    phone: "+15559876543",
     location: "Brooklyn, NY",
     about: "Award-winning creative director with 8+ years of experience crafting compelling visual stories for global brands. I blend artistic vision with strategic thinking to create designs that not only look beautiful but drive real business results.",
     avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=400&h=400&fit=crop&crop=face"
@@ -142,19 +148,25 @@ export const creativeData: PortfolioData = {
     {
       position: "Creative Director",
       company: "Vibrant Studios",
-      duration: "2021 - Present",
+      startDate: "2021-01-15",
+      endDate: undefined,
+      isPresent: true,
       description: "Lead creative vision for 20+ brand campaigns reaching millions of users. Manage team of 8 designers and collaborate with C-suite executives. Increased client retention by 45% through innovative design solutions."
     },
     {
       position: "Senior Visual Designer",
       company: "Brand Collective",
-      duration: "2019 - 2021",
+      startDate: "2019-04-01",
+      endDate: "2021-01-10",
+      isPresent: false,
       description: "Designed brand identities for Fortune 500 companies. Created comprehensive design systems and style guides. Led rebranding project that increased brand recognition by 60%."
     },
     {
       position: "Graphic Designer",
       company: "Creative House",
-      duration: "2017 - 2019",
+      startDate: "2017-08-01",
+      endDate: "2019-03-25",
+      isPresent: false,
       description: "Produced visual content for digital and print media. Specialized in packaging design and marketing materials. Worked with diverse clients from tech startups to luxury brands."
     }
   ],
@@ -238,8 +250,8 @@ export const creativeData: PortfolioData = {
   languages: [
     { name: "English", level: "Native" },
     { name: "Spanish", level: "Native" },
-    { name: "French", level: "Beginner" },
-    { name: "Visual Communication", level: "Beginner" }
+    { name: "French", level: "Expert" },
+    { name: "Visual Communication", level: "Expert" }
   ]
 };
 
@@ -248,7 +260,7 @@ export const minimalistData: PortfolioData = {
     name: "David Kim",
     title: "UX Designer & Product Strategist",
     email: "david.kim@design.co",
-    phone: "+1 (555) 456-7890",
+    phone: "+15554567890",
     location: "Seattle, WA",
     about: "Minimalist designer who believes in the power of simplicity. I create intuitive digital experiences that solve real problems through thoughtful research, strategic thinking, and clean design principles.",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face"
@@ -263,19 +275,25 @@ export const minimalistData: PortfolioData = {
     {
       position: "Senior UX Designer",
       company: "Minimal Co",
-      duration: "2021 - Present",
+      startDate: "2021-05-01",
+      endDate: undefined,
+      isPresent: true,
       description: "Lead UX design for B2B SaaS platform with 50K+ users. Redesigned core workflows resulting in 30% increase in user engagement. Established design system used across 8 product teams."
     },
     {
       position: "Product Designer",
       company: "Clean Tech Solutions",
-      duration: "2019 - 2021",
+      startDate: "2019-02-15",
+      endDate: "2021-04-30",
+      isPresent: false,
       description: "Designed mobile and web experiences for clean energy platform. Conducted user research with 200+ participants. Improved conversion rates by 25% through iterative design improvements."
     },
     {
       position: "UX Designer",
       company: "Simple Apps",
-      duration: "2018 - 2019",
+      startDate: "2018-07-01",
+      endDate: "2019-02-10",
+      isPresent: false,
       description: "Created user interfaces for productivity applications. Specialized in minimalist design approaches. Reduced user onboarding time by 40% through simplified user flows."
     }
   ],
@@ -369,7 +387,7 @@ export const corporateData: PortfolioData = {
     name: "Sarah Johnson",
     title: "VP of Engineering & Technology Strategy",
     email: "sarah.johnson@techcorp.com",
-    phone: "+1 (555) 234-5678",
+    phone: "+15552345678",
     location: "New York, NY",
     about: "Executive technology leader with 12+ years of experience scaling engineering teams and driving digital transformation. Proven track record of delivering enterprise solutions that generate $100M+ in revenue while building high-performing, diverse teams.",
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face"
@@ -384,19 +402,25 @@ export const corporateData: PortfolioData = {
     {
       position: "VP of Engineering",
       company: "TechCorp Solutions",
-      duration: "2020 - Present",
+      startDate: "2020-01-01",
+      endDate: undefined,
+      isPresent: true,
       description: "Lead engineering organization of 150+ developers across 12 teams. Drove cloud migration saving $2M annually. Implemented DevOps practices reducing deployment time by 80%. Increased team diversity by 40% through strategic hiring initiatives."
     },
     {
       position: "Director of Technology",
       company: "Global Innovations Inc",
-      duration: "2017 - 2020",
+      startDate: "2017-09-01",
+      endDate: "2019-12-31",
+      isPresent: false,
       description: "Managed technology roadmap for $500M product portfolio. Led digital transformation initiative affecting 10,000+ employees. Architected microservices platform handling 1B+ requests daily. Delivered 15+ major product releases on time and budget."
     },
     {
       position: "Senior Engineering Manager",
       company: "Enterprise Systems Ltd",
-      duration: "2014 - 2017",
+      startDate: "2014-03-15",
+      endDate: "2017-08-30",
+      isPresent: false,
       description: "Built and managed engineering teams for B2B SaaS platform. Scaled infrastructure from 10K to 1M+ users. Implemented machine learning solutions improving customer satisfaction by 35%. Led company's first successful SOC 2 compliance audit."
     }
   ],
@@ -507,7 +531,7 @@ export const classicData: PortfolioData = {
     name: "Eleanor Whitfield",
     title: "Senior Content Strategist & Editorial Director",
     email: "eleanor.whitfield@content.co",
-    phone: "+1 (555) 345-6789",
+    phone: "+15553456789",
     location: "Boston, MA",
     about: "Seasoned editorial professional with 10+ years of experience crafting compelling content strategies for leading publications and brands. I believe in the timeless power of great storytelling to connect, inspire, and drive meaningful engagement.",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face"
@@ -522,25 +546,33 @@ export const classicData: PortfolioData = {
     {
       position: "Editorial Director",
       company: "Heritage Publishing Group",
-      duration: "2021 - Present",
+      startDate: "2021-10-01",
+      endDate: undefined,
+      isPresent: true,
       description: "Oversee editorial strategy for 5 lifestyle publications with combined readership of 2M+. Manage team of 15 writers and editors. Increased digital engagement by 65% through content optimization and audience analysis."
     },
     {
       position: "Senior Content Strategist",
       company: "Classic Media Co",
-      duration: "2018 - 2021",
+      startDate: "2018-05-15",
+      endDate: "2021-09-30",
+      isPresent: false,
       description: "Developed content strategies for luxury brands and lifestyle companies. Created editorial calendars, style guides, and content workflows. Improved client content performance by average of 45% across all metrics."
     },
     {
       position: "Content Manager",
       company: "Traditional Publications",
-      duration: "2016 - 2018",
+      startDate: "2016-01-01",
+      endDate: "2018-05-10",
+      isPresent: false,
       description: "Managed content creation and publication for monthly magazine. Coordinated with photographers, illustrators, and designers. Maintained editorial calendar and ensured timely delivery of high-quality content."
     },
     {
       position: "Staff Writer",
       company: "City Tribune",
-      duration: "2014 - 2016",
+      startDate: "2014-08-01",
+      endDate: "2015-12-31",
+      isPresent: false,
       description: "Covered arts, culture, and lifestyle beats for daily newspaper. Wrote feature articles, interviews, and reviews. Developed strong relationships with local businesses and community leaders."
     }
   ],
