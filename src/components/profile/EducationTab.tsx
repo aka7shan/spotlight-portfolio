@@ -1,10 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import type { User, Education } from "../../types/portfolio";
-import { Plus, Trash2, GraduationCap } from "lucide-react";
+import { Plus, Trash2, GraduationCap, Edit, Calendar } from "lucide-react";
+import { EducationDialog } from "./EducationDialog";
+import { format } from "date-fns";
 
 interface EducationTabProps {
   formData: User;
@@ -12,89 +12,103 @@ interface EducationTabProps {
 }
 
 export function EducationTab({ formData, handleInputChange }: EducationTabProps) {
-  const addEducation = useCallback(() => {
-    const newEdu: Education = {
-      degree: '',
-      institution: '',
-      year: ''
-    };
-    handleInputChange('education', [...(formData.education || []), newEdu]);
-  }, [formData.education, handleInputChange]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
+  const [selectedEducation, setSelectedEducation] = useState<Education | undefined>(undefined);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  const updateEducation = useCallback((index: number, field: keyof Education, value: string) => {
-    const education = [...(formData.education || [])];
-    education[index] = { ...education[index], [field]: value };
-    handleInputChange('education', education);
-  }, [formData.education, handleInputChange]);
+  const openAddDialog = useCallback(() => {
+    setSelectedEducation(undefined);
+    setDialogMode('add');
+    setEditIndex(null);
+    setDialogOpen(true);
+  }, []);
+
+  const openEditDialog = useCallback((education: Education, index: number) => {
+    setSelectedEducation(education);
+    setDialogMode('edit');
+    setEditIndex(index);
+    setDialogOpen(true);
+  }, []);
+
+  const handleSaveEducation = useCallback((education: Education) => {
+    if (dialogMode === 'add') {
+      handleInputChange('education', [...(formData.education || []), education]);
+    } else if (dialogMode === 'edit' && editIndex !== null) {
+      const educationList = [...(formData.education || [])];
+      educationList[editIndex] = education;
+      handleInputChange('education', educationList);
+    }
+  }, [dialogMode, editIndex, formData.education, handleInputChange]);
 
   const removeEducation = useCallback((index: number) => {
     const education = formData.education?.filter((_, i) => i !== index) || [];
     handleInputChange('education', education);
   }, [formData.education, handleInputChange]);
 
+    const formatDateDisplay = (dateString: string) => {
+      if (!dateString) return '';
+      try {
+        return format(new Date(dateString), 'MMM yyyy');
+      } catch {
+        return dateString;
+      }
+    };
+
+  const formatDuration = (education: Education) => {
+    const startDisplay = formatDateDisplay(education.startDate);
+    const endDisplay = education.isPresent ? 'Present' : formatDateDisplay(education.endDate || '');
+    return `${startDisplay} - ${endDisplay}`;
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Education *</CardTitle>
-          <Button onClick={addEducation}>
+          <Button onClick={openAddDialog}>
             <Plus className="w-4 h-4 mr-2" />
             Add Education
           </Button>
         </CardHeader>
         <CardContent>
           {formData.education && formData.education.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {formData.education.map((edu, index) => (
-                <Card key={index} className="border border-gray-200">
-                  <CardContent className="p-6">
+                <Card key={index} className="border border-gray-200 hover:border-green-300 transition-colors">
+                  <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-4">
-                      <h4 className="text-lg font-semibold">Education {index + 1}</h4>
-                      <Button
-                        onClick={() => removeEducation(index)}
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <Label>Degree</Label>
-                        <Input
-                          value={edu.degree || ''}
-                          onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                          placeholder="Bachelor of Science in Computer Science"
-                        />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 mb-1">{edu.degree || 'Unnamed Degree'}</h4>
+                        <h5 className="text-md font-medium text-blue-600 mb-2">
+                            {edu.institution}
+                          </h5>
+                        <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {formatDuration(edu)}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>{edu.year}</span>
+                          {edu.gpa && <span>GPA: {edu.gpa}</span>}
+                        </div>
                       </div>
-                      <div>
-                        <Label>Institution</Label>
-                        <Input
-                          value={edu.institution || ''}
-                          onChange={(e) => updateEducation(index, 'institution', e.target.value)}
-                          placeholder="University Name"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Year</Label>
-                        <Input
-                          value={edu.year || ''}
-                          onChange={(e) => updateEducation(index, 'year', e.target.value)}
-                          placeholder="2018 - 2022"
-                        />
-                      </div>
-                      <div>
-                        <Label>GPA (Optional)</Label>
-                        <Input
-                          value={edu.gpa || ''}
-                          onChange={(e) => updateEducation(index, 'gpa', e.target.value)}
-                          placeholder="3.8/4.0"
-                        />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => openEditDialog(edu, index)}
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 hover:bg-green-50 border-green-200"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => removeEducation(index)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50 border-red-200"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -109,6 +123,14 @@ export function EducationTab({ formData, handleInputChange }: EducationTabProps)
           )}
         </CardContent>
       </Card>
+
+      <EducationDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSave={handleSaveEducation}
+        mode={dialogMode}
+        education={selectedEducation}
+      />
     </div>
   );
 }

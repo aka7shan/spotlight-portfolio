@@ -1,19 +1,20 @@
-import type { PortfolioData } from '../types/portfolio';
+// src/data/portfolioData.ts (or similar path)
+import type { PortfolioData, User } from '../types/portfolio'; // Adjust path as needed
 
-// Comprehensive dummy data that matches real user profile structure
-export const modernTechData: PortfolioData = {
-  personalInfo: {
-    name: "Alex Chen",
-    title: "Full Stack Developer & UI/UX Designer",
-    email: "alex.chen@example.com",
-    phone: "+15551234567",
-    location: "San Francisco, CA",
-    about: "Passionate full-stack developer with 5+ years of experience building scalable web applications. I love creating intuitive user experiences and writing clean, efficient code. Always excited to learn new technologies and solve complex problems.",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face"
-  },
+// --- Modern Tech Template Data ---
+const modernTechUser: User = {
+  id: "user-modern-tech-001",
+  name: "Alex Chen",
+  title: "Full Stack Developer & UI/UX Designer",
+  email: "alex.chen@example.com",
+  phone: "+1 (555) 123-4567",
+  location: "San Francisco, CA",
+  about: "Passionate full-stack developer with 5+ years of experience building scalable web applications. I love creating intuitive user experiences and writing clean, efficient code. Always excited to learn new technologies and solve complex problems.",
+  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+  coverImage: "https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=1200&h=400&fit=crop", // New
   skills: [
-    "React", "TypeScript", "Node.js", "Python", "JavaScript", "HTML5", "CSS3", 
-    "Next.js", "Express.js", "PostgreSQL", "MongoDB", "Redis", "Docker", "AWS", 
+    "React", "TypeScript", "Node.js", "Python", "JavaScript", "HTML5", "CSS3",
+    "Next.js", "Express.js", "PostgreSQL", "MongoDB", "Redis", "Docker", "AWS",
     "Git", "GraphQL", "REST APIs", "Microservices", "CI/CD", "Jest", "Cypress",
     "Figma", "Adobe XD", "UI/UX Design", "Responsive Design", "Material-UI", "Tailwind CSS"
   ],
@@ -22,122 +23,161 @@ export const modernTechData: PortfolioData = {
       position: "Senior Full Stack Developer",
       company: "TechFlow Solutions",
       startDate: "2022-03-01",
-      endDate: undefined,
-      isPresent: true,
-      description: "Led development of microservices architecture serving 100K+ users. Built React dashboards, optimized database queries, and mentored 3 junior developers. Implemented CI/CD pipelines reducing deployment time by 60%."
-    },
-    {
-      position: "Full Stack Developer",
-      company: "StartupHub Inc",
-      startDate: "2020-06-15",
-      endDate: "2022-02-28",
-      isPresent: false,
-      description: "Developed and maintained 5+ web applications using React and Node.js. Collaborated with design team to implement responsive UI components. Reduced page load times by 40% through code optimization."
+      isPresent: true, // Updated
+      description: "Lead development of SaaS platform serving 10k+ users. Architected microservices backend using Node.js and Python. Implemented responsive frontend with React and TypeScript, improving user engagement by 40%.",
+      location: "San Francisco, CA",
+      skills: ["React", "Node.js", "TypeScript", "AWS", "Microservices"]
     },
     {
       position: "Frontend Developer",
-      company: "Digital Creatives",
-      startDate: "2019-09-01",
-      endDate: "2020-06-10",
-      isPresent: false,
-      description: "Created interactive web experiences for major brands. Worked with React, Vue.js, and vanilla JavaScript. Implemented pixel-perfect designs and ensured cross-browser compatibility."
+      company: "InnovateX",
+      startDate: "2020-01-15",
+      endDate: "2022-02-28", // Updated
+      isPresent: false, // Explicitly set
+      description: "Developed interactive dashboards for financial analytics. Collaborated with UX designers to implement pixel-perfect interfaces. Optimized application performance, reducing load times by 35%.",
+      location: "Remote",
+      skills: ["React", "JavaScript", "Redux", "D3.js", "CSS3"]
     }
   ],
   education: [
     {
-      degree: "Bachelor of Science in Computer Science",
+      degree: "Master of Science in Computer Science",
       institution: "Stanford University",
-      year: "2015 - 2019",
-      gpa: "3.8/4.0"
+      startDate: "2018-09-01",
+      endDate: "2020-06-15", // Updated
+      isPresent: false,
+      gpa: "3.9/4.0",
+      description: "Specialized in Human-Computer Interaction and Distributed Systems.",
+      achievements: ["Dean's List", "Published research on AI-driven UI personalization"]
     },
     {
-      degree: "Full Stack Web Development Bootcamp",
-      institution: "Le Wagon",
-      year: "2019",
-      gpa: "Distinction"
+      degree: "Bachelor of Science in Software Engineering",
+      institution: "UC Berkeley",
+      startDate: "2014-08-20",
+      endDate: "2018-05-20", // Updated
+      isPresent: false,
+      gpa: "3.7/4.0"
     }
   ],
   projects: [
     {
-      name: "EcoTracker App",
-      description: "A comprehensive sustainability tracking application that helps users monitor their carbon footprint, set eco-friendly goals, and connect with like-minded individuals. Built with React Native and Node.js.",
-      tags: ["React Native", "Node.js", "MongoDB", "Socket.io", "Chart.js"],
-      image: "https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=500&h=300&fit=crop",
-      link: "https://github.com/alexchen/ecotracker",
-      status: "Completed"
+      name: "AI-Powered Code Review Tool",
+      description: "SaaS platform that uses machine learning to automate code review processes, identifying potential bugs and style issues with 95% accuracy.",
+      tags: ["AI", "SaaS", "React", "Node.js", "Python", "TensorFlow"],
+      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&h=300&fit=crop",
+      link: "https://ai-code-review.example.com",
+      githubLink: "https://github.com/alexchen/ai-code-review",
+      status: "Completed",
+      startDate: "2023-05-01",
+      endDate: "2023-11-15",
+      role: "Lead Developer & ML Engineer",
+      technologies: ["React", "Node.js", "Python", "TensorFlow", "PostgreSQL"],
+      achievements: ["Secured $500k in seed funding", "Onboarded 500+ beta users"]
     },
     {
-      name: "TaskFlow Dashboard",
-      description: "Modern project management dashboard with real-time collaboration features. Includes drag-and-drop task management, team chat, and progress analytics.",
-      tags: ["React", "TypeScript", "Express.js", "PostgreSQL", "WebSocket"],
-      image: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=500&h=300&fit=crop",
-      link: "https://taskflow-demo.com",
-      status: "In Progress"
-    },
-    {
-      name: "AI Recipe Generator",
-      description: "Machine learning powered recipe suggestion app that creates personalized meal plans based on dietary preferences, available ingredients, and nutritional goals.",
-      tags: ["Python", "TensorFlow", "React", "FastAPI", "Redis"],
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=300&fit=crop",
-      link: "https://github.com/alexchen/ai-recipes",
-      status: "Completed"
+      name: "EcoTracker Mobile App",
+      description: "Cross-platform mobile application for tracking personal carbon footprint and suggesting eco-friendly alternatives.",
+      tags: ["React Native", "Firebase", "Sustainability", "Gamification"],
+      image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=500&h=300&fit=crop",
+      link: "https://ecotracker.app",
+      githubLink: "https://github.com/alexchen/ecotracker-app",
+      status: "In Progress",
+      startDate: "2024-01-10",
+      role: "Full Stack Developer",
+      technologies: ["React Native", "Firebase", "Node.js", "Express.js"],
+      achievements: ["Featured on App Store", "10k+ downloads"]
     }
   ],
   certifications: [
     {
       name: "AWS Certified Solutions Architect",
       issuer: "Amazon Web Services",
-      date: "2023",
-      credentialId: "AWS-SA-2023-001"
+      startDate: "2023-03-01",
+      endDate: "2026-03-01", // Updated
+      isPresent: false, // Explicit for validity period
+      credentialId: "AWS-CERT-123456",
+      link: "https://www.credly.com/badges/aws-cert-123456"
     },
     {
-      name: "Google Cloud Professional Developer",
+      name: "Google Professional Cloud Developer",
       issuer: "Google Cloud",
-      date: "2022",
-      credentialId: "GCP-PD-2022-456"
-    },
-    {
-      name: "Certified Kubernetes Administrator",
-      issuer: "Cloud Native Computing Foundation",
-      date: "2023",
-      credentialId: "CKA-2023-789"
+      startDate: "2022-07-15",
+      isPresent: true, // Ongoing or no expiry mentioned
+      credentialId: "GCP-CLOUD-DEV-7890",
+      link: "https://www.credential.net/gcp-cloud-dev-7890"
     }
   ],
   achievements: [
     {
-      title: "Tech Innovation Award",
-      description: "Recognized for developing an AI-powered code review system that improved code quality by 35%",
-      date: "2023"
+      title: "Hackathon Winner - FinTech Innovation",
+      description: "Led a team to win the annual company hackathon with a prototype for real-time fraud detection.",
+      startDate: "2023-10-20",
+      organization: "TechFlow Solutions",
+      link: "https://techflow.com/hackathon-2023-winners"
     },
     {
-      title: "Hackathon Winner",
-      description: "First place in Bay Area DevHack 2022 for creating a real-time disaster response coordination app",
-      date: "2022"
-    },
-    {
-      title: "Open Source Contributor",
-      description: "Active contributor to React ecosystem with 500+ GitHub stars across projects",
-      date: "2021-Present"
+      title: "Open Source Contributor of the Year",
+      description: "Recognized for significant contributions to the React ecosystem, including a popular library downloaded 100k+ times.",
+      startDate: "2023-12-01", // Award date
+      organization: "Open Source Initiative"
     }
   ],
   languages: [
-    { name: "English", level: "Native" },
-    { name: "Mandarin", level: "Fluent" },
-    { name: "Spanish", level: "Intermediate" },
-    { name: "JavaScript", level: "Expert" }
-  ]
+    { name: "English", level: "Fluent" },
+    { name: "Mandarin", level: "Intermediate" },
+    { name: "Spanish", level: "Beginner" }
+  ],
+  cv: {
+    fileName: "Alex_Chen_Resume.pdf",
+    fileUrl: "https://example.com/cv/alex_chen_resume.pdf",
+    uploadDate: "2024-05-20T10:00:00Z",
+    fileSize: 245760, // 240 KB
+    fileType: "application/pdf"
+  },
+  socialLinks: {
+    linkedin: "https://linkedin.com/in/alexchen-dev",
+    github: "https://github.com/alexchen",
+    twitter: "https://twitter.com/alexchen_dev",
+    website: "https://alexchen.dev"
+  },
+  createdAt: "2023-01-15T08:30:00Z",
+  updatedAt: "2024-05-21T14:22:00Z"
 };
 
-export const creativeData: PortfolioData = {
+export const modernTechData: PortfolioData = {
   personalInfo: {
-    name: "Maya Rodriguez",
-    title: "Creative Director & Visual Designer",
-    email: "maya.rodriguez@studio.com",
-    phone: "+15559876543",
-    location: "Brooklyn, NY",
-    about: "Award-winning creative director with 8+ years of experience crafting compelling visual stories for global brands. I blend artistic vision with strategic thinking to create designs that not only look beautiful but drive real business results.",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=400&h=400&fit=crop&crop=face"
+    name: modernTechUser.name,
+    title: modernTechUser.title!,
+    email: modernTechUser.email,
+    phone: modernTechUser.phone,
+    location: modernTechUser.location,
+    about: modernTechUser.about!,
+    avatar: modernTechUser.avatar,
+    coverImage: modernTechUser.coverImage, // New
+    socialLinks: modernTechUser.socialLinks // New
   },
+  skills: modernTechUser.skills!,
+  experience: modernTechUser.experience!,
+  education: modernTechUser.education!,
+  projects: modernTechUser.projects!,
+  certifications: modernTechUser.certifications!,
+  achievements: modernTechUser.achievements!,
+  languages: modernTechUser.languages!
+};
+// --- End Modern Tech ---
+
+
+// --- Creative Template Data ---
+const creativeUser: User = {
+  id: "user-creative-002",
+  name: "Maya Rodriguez",
+  title: "Creative Director & Visual Designer",
+  email: "maya.rodriguez@studio.com",
+  phone: "+1 (555) 987-6543",
+  location: "Brooklyn, NY",
+  about: "Award-winning creative director with 8+ years of experience crafting compelling visual stories for global brands. I blend artistic vision with strategic thinking to create designs that not only look beautiful but drive real business results.",
+  avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=400&h=400&fit=crop&crop=face",
+  coverImage: "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=1200&h=400&fit=crop", // New
   skills: [
     "Visual Design", "Art Direction", "Brand Identity", "Illustration", "Typography", "Color Theory",
     "Adobe Creative Suite", "Photoshop", "Illustrator", "InDesign", "After Effects", "Figma",
@@ -149,249 +189,138 @@ export const creativeData: PortfolioData = {
       position: "Creative Director",
       company: "Vibrant Studios",
       startDate: "2021-01-15",
-      endDate: undefined,
       isPresent: true,
-      description: "Lead creative vision for 20+ brand campaigns reaching millions of users. Manage team of 8 designers and collaborate with C-suite executives. Increased client retention by 45% through innovative design solutions."
+      description: "Lead creative vision for high-profile client campaigns across fashion, tech, and lifestyle sectors. Managed team of 12 designers and art directors. Increased client retention by 25% through innovative concepts.",
+      location: "Brooklyn, NY"
     },
     {
       position: "Senior Visual Designer",
-      company: "Brand Collective",
-      startDate: "2019-04-01",
-      endDate: "2021-01-10",
+      company: "Pixel Perfect Agency",
+      startDate: "2018-06-01",
+      endDate: "2020-12-31",
       isPresent: false,
-      description: "Designed brand identities for Fortune 500 companies. Created comprehensive design systems and style guides. Led rebranding project that increased brand recognition by 60%."
-    },
-    {
-      position: "Graphic Designer",
-      company: "Creative House",
-      startDate: "2017-08-01",
-      endDate: "2019-03-25",
-      isPresent: false,
-      description: "Produced visual content for digital and print media. Specialized in packaging design and marketing materials. Worked with diverse clients from tech startups to luxury brands."
+      description: "Designed brand identities, marketing materials, and digital experiences. Specialized in creating cohesive visual narratives. Worked with startups and established brands like EcoWear and TechNova.",
+      location: "New York, NY"
     }
   ],
   education: [
     {
       degree: "Master of Fine Arts in Graphic Design",
       institution: "Rhode Island School of Design",
-      year: "2015 - 2017",
+      startDate: "2015-09-01",
+      endDate: "2017-05-20",
+      isPresent: false,
       gpa: "3.9/4.0"
     },
     {
       degree: "Bachelor of Arts in Visual Arts",
       institution: "Parsons School of Design",
-      year: "2011 - 2015",
+      startDate: "2011-08-25",
+      endDate: "2015-05-15",
+      isPresent: false,
       gpa: "3.7/4.0"
     }
   ],
   projects: [
     {
       name: "Sunset Coffee Rebrand",
-      description: "Complete brand transformation for a local coffee chain, including logo design, packaging, store design, and digital presence. The rebrand increased sales by 40% in the first quarter.",
-      tags: ["Branding", "Packaging", "Print Design", "Illustration"],
-      image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500&h=300&fit=crop",
-      link: "https://behance.net/maya/sunset-coffee",
-      status: "Completed"
+      description: "Complete rebranding project for a premium coffee chain, including logo, packaging, store design, and digital presence. Focused on a warm, inviting aesthetic.",
+      tags: ["Branding", "Packaging", "Logo Design", "Retail Design"],
+      image: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=500&h=300&fit=crop",
+      link: "https://sunsetcoffee.com/rebrand",
+      status: "Completed",
+      startDate: "2023-03-01",
+      endDate: "2023-08-31",
+      role: "Lead Designer",
+      technologies: ["Adobe Illustrator", "Adobe InDesign", "Figma"],
+      achievements: ["Won A' Design Award", "Increased brand recognition by 40%"]
     },
     {
-      name: "Eco Fashion Campaign",
-      description: "Visual campaign for sustainable fashion brand featuring hand-drawn illustrations and vibrant photography. Campaign reached 2M+ people across social platforms.",
-      tags: ["Campaign Design", "Illustration", "Photography", "Social Media"],
-      image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=300&fit=crop",
-      link: "https://behance.net/maya/eco-fashion",
-      status: "Completed"
-    },
-    {
-      name: "Tech Conference Identity",
-      description: "Created dynamic visual identity for major tech conference including stage design, merchandise, and digital assets. Identity system used across 15+ touchpoints.",
-      tags: ["Event Design", "Motion Graphics", "Print Design", "Digital"],
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&h=300&fit=crop",
-      link: "https://maya-design.com/tech-conf",
-      status: "Completed"
+      name: "AR Art Installation 'Echoes'",
+      description: "Interactive art installation blending physical sculpture with augmented reality elements, exploring themes of memory and technology.",
+      tags: ["Installation", "AR", "Interactive Design", "Conceptual Art"],
+      image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&h=300&fit=crop",
+      link: "https://echoes-art-installation.com",
+      status: "Completed",
+      startDate: "2022-01-10",
+      endDate: "2022-06-20",
+      role: "Conceptual Designer & Lead Artist",
+      achievements: ["Featured at Digital Art Biennale", "Press coverage in ArtForum"]
     }
   ],
   certifications: [
     {
-      name: "Adobe Certified Expert - Photoshop",
+      name: "Adobe Certified Expert - Illustrator",
       issuer: "Adobe",
-      date: "2023",
-      credentialId: "ACE-PS-2023-001"
-    },
-    {
-      name: "Google UX Design Certificate",
-      issuer: "Google",
-      date: "2022",
-      credentialId: "GUX-2022-789"
-    },
-    {
-      name: "Brand Strategy Certification",
-      issuer: "Brand Institute",
-      date: "2021",
-      credentialId: "BSC-2021-456"
+      startDate: "2020-11-01",
+      isPresent: true, // Assuming no expiry or ongoing validity
+      credentialId: "ACE-ILLUSTRATOR-2020"
     }
   ],
   achievements: [
     {
-      title: "Design Excellence Award",
-      description: "Won 'Best Brand Identity' at the International Design Awards for Sunset Coffee rebrand",
-      date: "2023"
-    },
-    {
-      title: "Creative Leadership Recognition",
-      description: "Featured in 'Top 30 Under 30 Creative Directors' by Design Magazine",
-      date: "2022"
-    },
-    {
-      title: "Client Impact Award",
-      description: "Achieved 95% client satisfaction rate and 40% average increase in brand engagement",
-      date: "2021"
+      title: "Communication Arts Award Winner",
+      description: "Selected for the Communication Arts Annual Design Competition for the Sunset Coffee rebrand project.",
+      startDate: "2023-10-01",
+      organization: "Communication Arts Magazine"
     }
   ],
   languages: [
-    { name: "English", level: "Native" },
-    { name: "Spanish", level: "Native" },
-    { name: "French", level: "Expert" },
-    { name: "Visual Communication", level: "Expert" }
-  ]
+    { name: "English", level: "Fluent" },
+    { name: "Spanish", level: "Fluent" },
+    { name: "French", level: "Intermediate" }
+  ],
+  cv: {
+    fileName: "Maya_Rodriguez_Portfolio.pdf",
+    fileUrl: "https://example.com/cv/maya_rodriguez_portfolio.pdf",
+    uploadDate: "2024-04-10T09:15:00Z",
+    fileSize: 12582912, // 12 MB
+    fileType: "application/pdf"
+  },
+  socialLinks: {
+    linkedin: "https://linkedin.com/in/mayarodriguez-design",
+    dribbble: "https://dribbble.com/mayarodriguez",
+    behance: "https://behance.net/mayarodriguez",
+    website: "https://mayarodriguez.studio",
+  },
+  createdAt: "2022-03-22T11:45:00Z",
+  updatedAt: "2024-05-18T16:30:00Z"
 };
 
-export const minimalistData: PortfolioData = {
+export const creativeData: PortfolioData = {
   personalInfo: {
-    name: "David Kim",
-    title: "UX Designer & Product Strategist",
-    email: "david.kim@design.co",
-    phone: "+15554567890",
-    location: "Seattle, WA",
-    about: "Minimalist designer who believes in the power of simplicity. I create intuitive digital experiences that solve real problems through thoughtful research, strategic thinking, and clean design principles.",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face"
+    name: creativeUser.name,
+    title: creativeUser.title!,
+    email: creativeUser.email,
+    phone: creativeUser.phone,
+    location: creativeUser.location,
+    about: creativeUser.about!,
+    avatar: creativeUser.avatar,
+    coverImage: creativeUser.coverImage, // New
+    socialLinks: creativeUser.socialLinks // New
   },
-  skills: [
-    "User Experience Design", "User Interface Design", "Product Strategy", "Design Systems", "Prototyping",
-    "User Research", "Usability Testing", "Information Architecture", "Interaction Design", "Wireframing",
-    "Figma", "Sketch", "Adobe XD", "Principle", "Framer", "InVision", "Miro", "Notion",
-    "Design Thinking", "Agile Methodology", "Data Analysis", "A/B Testing", "Accessibility", "Typography"
-  ],
-  experience: [
-    {
-      position: "Senior UX Designer",
-      company: "Minimal Co",
-      startDate: "2021-05-01",
-      endDate: undefined,
-      isPresent: true,
-      description: "Lead UX design for B2B SaaS platform with 50K+ users. Redesigned core workflows resulting in 30% increase in user engagement. Established design system used across 8 product teams."
-    },
-    {
-      position: "Product Designer",
-      company: "Clean Tech Solutions",
-      startDate: "2019-02-15",
-      endDate: "2021-04-30",
-      isPresent: false,
-      description: "Designed mobile and web experiences for clean energy platform. Conducted user research with 200+ participants. Improved conversion rates by 25% through iterative design improvements."
-    },
-    {
-      position: "UX Designer",
-      company: "Simple Apps",
-      startDate: "2018-07-01",
-      endDate: "2019-02-10",
-      isPresent: false,
-      description: "Created user interfaces for productivity applications. Specialized in minimalist design approaches. Reduced user onboarding time by 40% through simplified user flows."
-    }
-  ],
-  education: [
-    {
-      degree: "Master of Design in Interaction Design",
-      institution: "Carnegie Mellon University",
-      year: "2016 - 2018",
-      gpa: "3.8/4.0"
-    },
-    {
-      degree: "Bachelor of Science in Psychology",
-      institution: "University of Washington",
-      year: "2012 - 2016",
-      gpa: "3.6/4.0"
-    }
-  ],
-  projects: [
-    {
-      name: "Focus Timer App",
-      description: "Minimalist productivity app that helps users maintain focus through clean design and intuitive interactions. Over 100K downloads with 4.8-star rating.",
-      tags: ["Mobile App", "UX Design", "iOS", "Android"],
-      image: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=500&h=300&fit=crop",
-      link: "https://focustimer.app",
-      status: "Completed"
-    },
-    {
-      name: "E-commerce Redesign",
-      description: "Complete UX overhaul of fashion e-commerce platform. Simplified checkout process and improved product discovery, resulting in 35% increase in conversions.",
-      tags: ["Web Design", "E-commerce", "User Research", "Conversion Optimization"],
-      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=300&fit=crop",
-      link: "https://david-ux.com/ecommerce-case-study",
-      status: "Completed"
-    },
-    {
-      name: "Design System Framework",
-      description: "Comprehensive design system for B2B software company. Created reusable components, guidelines, and documentation used by 12+ product teams.",
-      tags: ["Design Systems", "Component Library", "Documentation", "Figma"],
-      image: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=500&h=300&fit=crop",
-      link: "https://github.com/davidkim/design-system",
-      status: "In Progress"
-    }
-  ],
-  certifications: [
-    {
-      name: "Certified Usability Analyst",
-      issuer: "Human Factors International",
-      date: "2023",
-      credentialId: "CUA-2023-001"
-    },
-    {
-      name: "Google UX Design Professional Certificate",
-      issuer: "Google",
-      date: "2022",
-      credentialId: "GUX-PRO-2022"
-    },
-    {
-      name: "Design Thinking Certification",
-      issuer: "IDEO U",
-      date: "2021",
-      credentialId: "DT-IDEO-2021"
-    }
-  ],
-  achievements: [
-    {
-      title: "UX Innovation Award",
-      description: "Recognized for creating accessible design solutions that improved usability for users with disabilities",
-      date: "2023"
-    },
-    {
-      title: "Product Impact Recognition",
-      description: "Led design initiatives that increased overall product engagement by 40% across 3 major releases",
-      date: "2022"
-    },
-    {
-      title: "Design System Excellence",
-      description: "Created design system adopted by 50+ designers, reducing design-to-development time by 60%",
-      date: "2021"
-    }
-  ],
-  languages: [
-    { name: "English", level: "Native" },
-    { name: "Korean", level: "Native" },
-    { name: "Japanese", level: "Intermediate" },
-    { name: "Design Language", level: "Expert" }
-  ]
+  skills: creativeUser.skills!,
+  experience: creativeUser.experience!,
+  education: creativeUser.education!,
+  projects: creativeUser.projects!,
+  certifications: creativeUser.certifications!,
+  achievements: creativeUser.achievements!,
+  languages: creativeUser.languages!
 };
+// --- End Creative ---
 
-export const corporateData: PortfolioData = {
-  personalInfo: {
-    name: "Sarah Johnson",
-    title: "VP of Engineering & Technology Strategy",
-    email: "sarah.johnson@techcorp.com",
-    phone: "+15552345678",
-    location: "New York, NY",
-    about: "Executive technology leader with 12+ years of experience scaling engineering teams and driving digital transformation. Proven track record of delivering enterprise solutions that generate $100M+ in revenue while building high-performing, diverse teams.",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face"
-  },
+
+// --- Corporate Template Data ---
+const corporateUser: User = {
+  id: "user-corporate-003",
+  name: "Sarah Johnson",
+  title: "VP of Engineering & Technology Strategy",
+  email: "sarah.johnson@techcorp.com",
+  phone: "+1 (555) 234-5678",
+  location: "New York, NY",
+  about: "Executive technology leader with 12+ years of experience scaling engineering teams and driving digital transformation. Proven track record of delivering enterprise solutions that generate $100M+ in revenue while building high-performing, diverse teams.",
+  avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face",
+  coverImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=400&fit=crop", // New
   skills: [
     "Engineering Leadership", "Technology Strategy", "Digital Transformation", "Team Building", "Agile Methodology",
     "Enterprise Architecture", "Cloud Computing", "DevOps", "Machine Learning", "Data Strategy",
@@ -401,262 +330,388 @@ export const corporateData: PortfolioData = {
   experience: [
     {
       position: "VP of Engineering",
-      company: "TechCorp Solutions",
-      startDate: "2020-01-01",
-      endDate: undefined,
+      company: "GlobalTech Industries",
+      startDate: "2019-06-01",
       isPresent: true,
-      description: "Lead engineering organization of 150+ developers across 12 teams. Drove cloud migration saving $2M annually. Implemented DevOps practices reducing deployment time by 80%. Increased team diversity by 40% through strategic hiring initiatives."
+      description: "Lead engineering organization of 200+ developers, QA engineers, and DevOps specialists. Spearheaded cloud migration to AWS, reducing infrastructure costs by 30%. Implemented Agile at scale, improving delivery velocity by 50%.",
+      location: "New York, NY"
     },
     {
-      position: "Director of Technology",
-      company: "Global Innovations Inc",
-      startDate: "2017-09-01",
-      endDate: "2019-12-31",
+      position: "Director of Software Engineering",
+      company: "Innovate Solutions Inc.",
+      startDate: "2016-03-15",
+      endDate: "2019-05-31",
       isPresent: false,
-      description: "Managed technology roadmap for $500M product portfolio. Led digital transformation initiative affecting 10,000+ employees. Architected microservices platform handling 1B+ requests daily. Delivered 15+ major product releases on time and budget."
-    },
-    {
-      position: "Senior Engineering Manager",
-      company: "Enterprise Systems Ltd",
-      startDate: "2014-03-15",
-      endDate: "2017-08-30",
-      isPresent: false,
-      description: "Built and managed engineering teams for B2B SaaS platform. Scaled infrastructure from 10K to 1M+ users. Implemented machine learning solutions improving customer satisfaction by 35%. Led company's first successful SOC 2 compliance audit."
+      description: "Managed development teams for financial services products. Drove adoption of microservices architecture. Mentored junior engineers and led technical hiring efforts.",
+      location: "Boston, MA"
     }
   ],
   education: [
     {
       degree: "Master of Business Administration",
       institution: "Harvard Business School",
-      year: "2012 - 2014",
+      startDate: "2013-09-01",
+      endDate: "2015-05-30",
+      isPresent: false,
       gpa: "3.8/4.0"
     },
     {
-      degree: "Master of Science in Computer Science",
+      degree: "Bachelor of Science in Computer Engineering",
       institution: "MIT",
-      year: "2008 - 2010",
+      startDate: "2009-09-01",
+      endDate: "2013-06-15",
+      isPresent: false,
       gpa: "3.9/4.0"
-    },
-    {
-      degree: "Bachelor of Engineering in Software Engineering",
-      institution: "Stanford University",
-      year: "2004 - 2008",
-      gpa: "3.7/4.0"
     }
   ],
   projects: [
     {
       name: "Enterprise Cloud Migration",
-      description: "Led organization-wide migration to AWS cloud infrastructure. Managed $5M budget, coordinated 8 teams, and delivered 6 months ahead of schedule while achieving 99.9% uptime.",
-      tags: ["Cloud Computing", "AWS", "Enterprise Architecture", "Migration Strategy"],
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&h=300&fit=crop",
-      link: "https://techcorp.com/cloud-success-story",
-      status: "Completed"
-    },
-    {
-      name: "AI-Powered Analytics Platform",
-      description: "Spearheaded development of machine learning platform processing 10TB+ daily data. Generated $50M in new revenue opportunities through predictive analytics and customer insights.",
-      tags: ["Machine Learning", "Big Data", "Analytics", "Python", "TensorFlow"],
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&h=300&fit=crop",
-      link: "https://techcorp.com/ai-platform",
-      status: "Completed"
-    },
-    {
-      name: "Digital Transformation Initiative",
-      description: "Orchestrated company-wide digital transformation affecting 5,000+ employees. Modernized legacy systems, implemented agile practices, and established DevOps culture.",
-      tags: ["Digital Transformation", "Change Management", "DevOps", "Agile"],
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&h=300&fit=crop",
-      link: "https://techcorp.com/transformation",
-      status: "Completed"
+      description: "Led the end-to-end migration of legacy on-premise systems to a hybrid cloud environment on AWS, serving 5 million customers.",
+      tags: ["Cloud Migration", "AWS", "DevOps", "Enterprise Architecture"],
+      // image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&h=300&fit=crop", // Optional image
+      status: "Completed",
+      startDate: "2020-01-01",
+      endDate: "2021-12-31",
+      role: "Project Lead",
+      technologies: ["AWS", "Kubernetes", "Terraform", "Docker"],
+      achievements: ["Reduced operational costs by 30%", "Improved system uptime to 99.95%"]
     }
   ],
   certifications: [
     {
-      name: "AWS Certified Solutions Architect Professional",
+      name: "AWS Certified Solutions Architect - Professional",
       issuer: "Amazon Web Services",
-      date: "2023",
-      credentialId: "AWS-SAP-2023-001"
+      startDate: "2020-05-15",
+      isPresent: true,
+      credentialId: "AWS-SAP-987654"
     },
     {
-      name: "Certified Kubernetes Administrator",
-      issuer: "Cloud Native Computing Foundation",
-      date: "2022",
-      credentialId: "CKA-2022-456"
-    },
-    {
-      name: "Project Management Professional (PMP)",
-      issuer: "Project Management Institute",
-      date: "2021",
-      credentialId: "PMP-2021-789"
-    },
-    {
-      name: "Executive Leadership Certificate",
-      issuer: "Harvard Business School",
-      date: "2020",
-      credentialId: "ELC-HBS-2020"
+      name: "Certified Scrum Professional - Executive",
+      issuer: "Scrum Alliance",
+      startDate: "2018-11-20",
+      isPresent: true,
+      credentialId: "CSPE-555666"
     }
   ],
   achievements: [
     {
-      title: "Technology Innovation Award",
-      description: "Recognized by CIO Magazine as 'CTO of the Year' for leading industry-first AI implementation",
-      date: "2023"
-    },
-    {
-      title: "Business Impact Excellence",
-      description: "Generated $100M+ in revenue through technology initiatives and cost optimization strategies",
-      date: "2022"
-    },
-    {
-      title: "Diversity & Inclusion Leadership",
-      description: "Increased engineering team diversity by 40% and established mentorship programs for underrepresented groups",
-      date: "2021"
-    },
-    {
-      title: "Digital Transformation Success",
-      description: "Led company's largest technology transformation, completed 6 months ahead of schedule with $2M cost savings",
-      date: "2020"
+      title: "Forbes '30 Under 30' in Technology",
+      description: "Recognized for innovative leadership in enterprise software development.",
+      startDate: "2021-01-01",
+      organization: "Forbes Magazine"
     }
   ],
   languages: [
-    { name: "English", level: "Native" },
-    { name: "Spanish", level: "Native" },
-    { name: "Mandarin", level: "Native" },
-    { name: "Technical Leadership", level: "Expert" }
-  ]
+    { name: "English", level: "Fluent" }
+  ],
+  cv: {
+    fileName: "Sarah_Johnson_Executive_Resume.pdf",
+    fileUrl: "https://example.com/cv/sarah_johnson_exec_resume.pdf",
+    uploadDate: "2024-03-15T13:20:00Z",
+    fileSize: 1048576, // 1 MB
+    fileType: "application/pdf"
+  },
+  socialLinks: {
+    linkedin: "https://linkedin.com/in/sarahjohnson-exec",
+    twitter: "https://twitter.com/sjohnson_tech"
+    // website could be company profile page
+  },
+  createdAt: "2019-01-10T09:00:00Z",
+  updatedAt: "2024-05-20T11:10:00Z"
 };
 
-export const classicData: PortfolioData = {
+export const corporateData: PortfolioData = {
   personalInfo: {
-    name: "Eleanor Whitfield",
-    title: "Senior Content Strategist & Editorial Director",
-    email: "eleanor.whitfield@content.co",
-    phone: "+15553456789",
-    location: "Boston, MA",
-    about: "Seasoned editorial professional with 10+ years of experience crafting compelling content strategies for leading publications and brands. I believe in the timeless power of great storytelling to connect, inspire, and drive meaningful engagement.",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face"
+    name: corporateUser.name,
+    title: corporateUser.title!,
+    email: corporateUser.email,
+    phone: corporateUser.phone,
+    location: corporateUser.location,
+    about: corporateUser.about!,
+    avatar: corporateUser.avatar,
+    coverImage: corporateUser.coverImage, // New
+    socialLinks: corporateUser.socialLinks // New
   },
+  skills: corporateUser.skills!,
+  experience: corporateUser.experience!,
+  education: corporateUser.education!,
+  projects: corporateUser.projects!,
+  certifications: corporateUser.certifications!,
+  achievements: corporateUser.achievements!,
+  languages: corporateUser.languages!
+};
+// --- End Corporate ---
+
+
+// --- Classic Template Data ---
+const classicUser: User = {
+  id: "user-classic-004",
+  name: "Dr. Emily Harper",
+  title: "Senior Research Scientist & Author",
+  email: "emily.harper@research.edu",
+  phone: "+1 (555) 567-8901",
+  location: "Boston, MA",
+  about: "Dedicated research scientist with 10+ years of experience in molecular biology and bioinformatics. Published author of 25+ peer-reviewed articles. Passionate about translating scientific discoveries into real-world applications.",
+  avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
+  coverImage: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1200&h=400&fit=crop", // New
   skills: [
-    "Content Strategy", "Editorial Leadership", "Creative Writing", "Copy Editing", "SEO Writing", "Brand Storytelling",
-    "Digital Publishing", "Social Media Strategy", "Content Marketing", "Editorial Planning", "Style Guide Development",
-    "WordPress", "Adobe InDesign", "Google Analytics", "Mailchimp", "Hootsuite", "Semrush",
-    "Project Management", "Team Leadership", "Client Relations", "Deadline Management", "Quality Assurance", "Research & Fact-Checking"
+    "Molecular Biology", "Bioinformatics", "Data Analysis", "Genomics", "Proteomics",
+    "Scientific Writing", "Grant Writing", "Project Management", "Lab Management",
+    "Python", "R", "Linux", "Statistical Analysis", "Machine Learning",
+    "Public Speaking", "Mentoring", "Ethics", "Regulatory Affairs"
   ],
   experience: [
     {
-      position: "Editorial Director",
-      company: "Heritage Publishing Group",
-      startDate: "2021-10-01",
-      endDate: undefined,
+      position: "Senior Research Scientist",
+      company: "Harvard Medical School",
+      startDate: "2018-09-01",
       isPresent: true,
-      description: "Oversee editorial strategy for 5 lifestyle publications with combined readership of 2M+. Manage team of 15 writers and editors. Increased digital engagement by 65% through content optimization and audience analysis."
+      description: "Lead investigator on projects related to cancer genomics. Supervise team of 5 researchers. Secure $2M+ in annual grant funding. Publish findings in top-tier journals.",
+      location: "Boston, MA"
     },
     {
-      position: "Senior Content Strategist",
-      company: "Classic Media Co",
-      startDate: "2018-05-15",
-      endDate: "2021-09-30",
+      position: "Postdoctoral Research Fellow",
+      company: "MIT Department of Biology",
+      startDate: "2015-07-01",
+      endDate: "2018-08-31",
       isPresent: false,
-      description: "Developed content strategies for luxury brands and lifestyle companies. Created editorial calendars, style guides, and content workflows. Improved client content performance by average of 45% across all metrics."
-    },
-    {
-      position: "Content Manager",
-      company: "Traditional Publications",
-      startDate: "2016-01-01",
-      endDate: "2018-05-10",
-      isPresent: false,
-      description: "Managed content creation and publication for monthly magazine. Coordinated with photographers, illustrators, and designers. Maintained editorial calendar and ensured timely delivery of high-quality content."
-    },
-    {
-      position: "Staff Writer",
-      company: "City Tribune",
-      startDate: "2014-08-01",
-      endDate: "2015-12-31",
-      isPresent: false,
-      description: "Covered arts, culture, and lifestyle beats for daily newspaper. Wrote feature articles, interviews, and reviews. Developed strong relationships with local businesses and community leaders."
+      description: "Researched gene regulation mechanisms in stem cells. Developed novel computational tools for analyzing sequencing data. Co-authored 10 publications.",
+      location: "Cambridge, MA"
     }
   ],
   education: [
     {
-      degree: "Master of Arts in Journalism",
-      institution: "Columbia University",
-      year: "2012 - 2014",
-      gpa: "3.8/4.0"
+      degree: "Ph.D. in Molecular Biology",
+      institution: "Stanford University",
+      startDate: "2011-09-15",
+      endDate: "2015-06-10",
+      isPresent: false,
+      gpa: "4.0/4.0",
+      description: "Thesis: 'Computational Analysis of Transcription Factor Binding in Embryonic Development'",
+      achievements: ["Outstanding Dissertation Award", "Best Poster Presentation - Biology Symposium"]
     },
     {
-      degree: "Bachelor of Arts in English Literature",
-      institution: "Harvard University",
-      year: "2008 - 2012",
-      gpa: "Magna Cum Laude"
+      degree: "Bachelor of Science in Biochemistry",
+      institution: "University of California, Berkeley",
+      startDate: "2007-08-20",
+      endDate: "2011-05-15",
+      isPresent: false,
+      gpa: "3.9/4.0"
     }
   ],
   projects: [
     {
-      name: "Heritage Magazine Redesign",
-      description: "Led complete editorial and visual redesign of 50-year-old lifestyle magazine. Modernized content strategy while preserving classic aesthetic. Increased circulation by 30% and digital subscriptions by 85%.",
-      tags: ["Editorial Strategy", "Content Planning", "Brand Evolution", "Digital Publishing"],
-      image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=500&h=300&fit=crop",
-      link: "https://heritagemagaizne.com/redesign-story",
-      status: "Completed"
-    },
-    {
-      name: "Luxury Brand Content Series",
-      description: "Created multi-platform content series for premium fashion brand. Developed 50+ articles, videos, and social posts that increased brand awareness by 40% and drove $2M in sales.",
-      tags: ["Luxury Branding", "Content Marketing", "Storytelling", "Multi-platform"],
-      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&h=300&fit=crop",
-      link: "https://eleanor-content.com/luxury-series",
-      status: "Completed"
-    },
-    {
-      name: "Editorial Style Guide",
-      description: "Developed comprehensive style guide and content standards for media company. Created templates, workflows, and quality guidelines used by 20+ writers and editors daily.",
-      tags: ["Style Guide", "Editorial Standards", "Process Optimization", "Team Training"],
-      image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=500&h=300&fit=crop",
-      link: "https://styleguide.heritage.com",
-      status: "Completed"
+      name: "Cancer Mutation Detection Pipeline",
+      description: "Developed a high-throughput computational pipeline for identifying driver mutations in cancer genomes from TCGA data.",
+      tags: ["Bioinformatics", "Cancer Genomics", "Python", "Machine Learning"],
+      // image: "https://images.unsplash.com/photo-1581091226033-d5c48150dbaa?w=500&h=300&fit=crop", // Optional
+      link: "https://github.com/emilyharper/cancer-mutation-pipeline",
+      status: "Completed",
+      startDate: "2019-03-01",
+      endDate: "2020-09-30",
+      role: "Principal Investigator & Lead Developer",
+      technologies: ["Python", "R", "Snakemake", "Machine Learning"],
+      achievements: ["Published in Nature Biotechnology", "Pipeline adopted by 3 other research labs"]
     }
   ],
   certifications: [
     {
-      name: "Google Analytics Certified",
-      issuer: "Google",
-      date: "2023",
-      credentialId: "GA-CERT-2023-001"
-    },
-    {
-      name: "Content Marketing Institute Certification",
-      issuer: "Content Marketing Institute",
-      date: "2022",
-      credentialId: "CMI-2022-456"
-    },
-    {
-      name: "AP Style Certification",
-      issuer: "Associated Press",
-      date: "2021",
-      credentialId: "AP-STYLE-2021"
+      name: "Certified Clinical Research Professional (CCRP)",
+      issuer: "Society of Clinical Research Associates",
+      startDate: "2020-02-01",
+      isPresent: true,
+      credentialId: "CCRP-777888"
     }
   ],
   achievements: [
     {
-      title: "Editorial Excellence Award",
-      description: "Received 'Editor of the Year' recognition from National Magazine Association for Heritage Magazine redesign",
-      date: "2023"
+      title: "Young Investigator Award",
+      description: "Awarded for outstanding contributions to cancer research.",
+      startDate: "2021-11-15",
+      organization: "American Association for Cancer Research"
     },
     {
-      title: "Content Strategy Innovation",
-      description: "Pioneered data-driven content approach that increased average engagement time by 60% across all platforms",
-      date: "2022"
-    },
-    {
-      title: "Mentorship Recognition",
-      description: "Mentored 12 junior writers, with 8 receiving promotions and 3 winning industry writing awards",
-      date: "2021"
+      title: "NIH R01 Grant Recipient",
+      description: "Principal Investigator on a 5-year, $2.1M grant for research into tumor microenvironment.",
+      startDate: "2022-04-01",
+      organization: "National Institutes of Health"
     }
   ],
   languages: [
-    { name: "English", level: "Native" },
-    { name: "French", level: "Fluent" },
-    { name: "Italian", level: "Intermediate" },
-    { name: "Editorial Voice", level: "Expert" }
-  ]
+    { name: "English", level: "Fluent" },
+    { name: "German", level: "Intermediate" } // Common for science
+  ],
+  cv: {
+    fileName: "Emily_Harper_Academic_CV.pdf",
+    fileUrl: "https://example.com/cv/emily_harper_academic_cv.pdf",
+    uploadDate: "2024-05-01T10:00:00Z",
+    fileSize: 5242880, // 5 MB
+    fileType: "application/pdf"
+  },
+  socialLinks: {
+    linkedin: "https://linkedin.com/in/emilyharper-phd",
+  },
+  createdAt: "2018-08-01T12:00:00Z",
+  updatedAt: "2024-05-22T09:45:00Z"
 };
+
+export const classicData: PortfolioData = {
+  personalInfo: {
+    name: classicUser.name,
+    title: classicUser.title!,
+    email: classicUser.email,
+    phone: classicUser.phone,
+    location: classicUser.location,
+    about: classicUser.about!,
+    avatar: classicUser.avatar,
+    coverImage: classicUser.coverImage, // New
+    socialLinks: classicUser.socialLinks // New
+  },
+  skills: classicUser.skills!,
+  experience: classicUser.experience!,
+  education: classicUser.education!,
+  projects: classicUser.projects!,
+  certifications: classicUser.certifications!,
+  achievements: classicUser.achievements!,
+  languages: classicUser.languages!
+};
+// --- End Classic ---
+
+
+// --- Minimalist Template Data ---
+const minimalistUser: User = {
+  id: "user-minimalist-005",
+  name: "Jordan Lee",
+  title: "Freelance Writer & Editor",
+  email: "jordan.lee@protonmail.com",
+  phone: "+1 (555) 345-6789",
+  location: "Portland, OR",
+  about: "Clear and concise writer helping businesses tell their story. Specializing in technology, sustainability, and lifestyle content. Available for long-term collaborations and one-off projects.",
+  avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&crop=face",
+  coverImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&h=400&fit=crop", // New
+  skills: [
+    "Content Strategy", "Editorial Leadership", "Creative Writing", "Copy Editing", "SEO Writing", "Brand Storytelling",
+    "Digital Publishing", "Social Media Strategy", "Content Marketing", "Editorial Planning", "Style Guide Development",
+    "WordPress", "Adobe InDesign", "Google Analytics", "Mailchimp", "Grammarly",
+    "Project Management", "Client Relations", "Deadline Management", "Research & Fact-Checking"
+  ],
+  experience: [
+    {
+      position: "Freelance Content Specialist",
+      company: "Self-Employed",
+      startDate: "2020-05-01",
+      isPresent: true,
+      description: "Provide writing, editing, and content strategy services to tech startups and sustainable brands. Manage full content calendars and brand voice consistency.",
+      location: "Portland, OR"
+    },
+    {
+      position: "Senior Content Editor",
+      company: "Heritage Publications",
+      startDate: "2017-02-15",
+      endDate: "2020-04-30",
+      isPresent: false,
+      description: "Oversaw editorial process for monthly magazine. Managed team of 4 writers and 2 editors. Developed style guide and content standards used company-wide.",
+      location: "Seattle, WA"
+    }
+  ],
+  education: [
+    {
+      degree: "Master of Arts in English Literature",
+      institution: "University of Oregon",
+      startDate: "2015-09-10",
+      endDate: "2017-06-15",
+      isPresent: false,
+      gpa: "3.8/4.0",
+      achievements: ["Graduate Writing Fellowship"]
+    },
+    {
+      degree: "Bachelor of Arts in Journalism",
+      institution: "University of Washington",
+      startDate: "2011-09-20",
+      endDate: "2015-06-10",
+      isPresent: false,
+      gpa: "3.7/4.0"
+    }
+  ],
+  projects: [
+    {
+      name: "TechGrowth Startup Series",
+      description: "Authored a 12-part blog series profiling emerging tech startups in the Pacific Northwest, highlighting their innovation and impact.",
+      tags: ["Tech", "Startups", "Interviews", "Blog Series"],
+      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&h=300&fit=crop",
+      link: "https://techgrowth.com/startup-series",
+      status: "Completed",
+      startDate: "2022-01-01",
+      endDate: "2022-12-31",
+      role: "Lead Writer & Editor",
+      achievements: ["Series drove 50% increase in website traffic", "Featured in industry newsletter"]
+    }
+  ],
+  certifications: [
+    {
+      name: "Google Analytics Individual Qualification",
+      issuer: "Google",
+      startDate: "2021-03-15",
+      isPresent: true,
+      credentialId: "GAQ-2021-112233"
+    },
+    {
+      name: "HubSpot Content Marketing Certification",
+      issuer: "HubSpot Academy",
+      startDate: "2020-11-01",
+      endDate: "2023-11-01",
+      isPresent: false,
+      credentialId: "HCM-2020-445566"
+    }
+  ],
+  achievements: [
+    {
+      title: "Best Feature Article - Regional Media Awards",
+      description: "Awarded for investigative piece on local sustainable agriculture initiatives.",
+      startDate: "2019-05-01",
+      organization: "Pacific Northwest Editors Guild"
+    }
+  ],
+  languages: [
+    { name: "English", level: "Fluent" }
+  ],
+  cv: {
+    fileName: "Jordan_Lee_Writer_Portfolio.pdf",
+    fileUrl: "https://example.com/cv/jordan_lee_writer_portfolio.pdf",
+    uploadDate: "2024-02-28T14:00:00Z",
+    fileSize: 3145728, // 3 MB
+    fileType: "application/pdf"
+  },
+  socialLinks: {
+    linkedin: "https://linkedin.com/in/jordanlee-writer",
+    website: "https://jordanleewriter.com",
+  },
+  createdAt: "2020-04-01T08:00:00Z",
+  updatedAt: "2024-05-19T17:30:00Z"
+};
+
+export const minimalistData: PortfolioData = {
+  personalInfo: {
+    name: minimalistUser.name,
+    title: minimalistUser.title!,
+    email: minimalistUser.email,
+    phone: minimalistUser.phone,
+    location: minimalistUser.location,
+    about: minimalistUser.about!,
+    avatar: minimalistUser.avatar,
+    coverImage: minimalistUser.coverImage, // New
+    socialLinks: minimalistUser.socialLinks // New
+  },
+  skills: minimalistUser.skills!,
+  experience: minimalistUser.experience!,
+  education: minimalistUser.education!,
+  projects: minimalistUser.projects!,
+  certifications: minimalistUser.certifications!,
+  achievements: minimalistUser.achievements!,
+  languages: minimalistUser.languages!
+};
+// --- End Minimalist ---
+
+
+

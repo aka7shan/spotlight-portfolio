@@ -1,85 +1,73 @@
 import { useState, useCallback, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,DialogDescription } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
-import { Badge } from "../ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { FormField } from "../ui/form-validation";
 import { EnhancedDatePicker } from "../ui/enhanced-date-picker";
-import type { Experience } from "../../types/portfolio";
-import { CalendarIcon, X, Building2 } from "lucide-react";
+import type { Certification } from "../../types/portfolio";
+import { Award, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "../ui/utils";
 
-interface ExperienceDialogProps {
+interface CertificationDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (experience: Experience) => void;
+  onSave: (certification: Certification) => void;
   mode: 'add' | 'edit';
-  experience?: Experience;
+  certification?: Certification;
 }
 
-export function ExperienceDialog({ open, onClose, onSave, mode, experience }: ExperienceDialogProps) {
-  const [formData, setFormData] = useState<Experience>({
-    position: '',
-    company: '',
+export function CertificationDialog({ open, onClose, onSave, mode, certification }: CertificationDialogProps) {
+  const [formData, setFormData] = useState<Certification>({
+    name: '',
+    issuer: '',
     startDate: '',
     endDate: '',
-    isPresent: false,
-    description: '',
-    location: '',
-    skills: []
+    credentialId: '',
+    isPresent: false
   });
 
-  // Update form data when experience prop changes (for edit mode)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+
+  // Update form data when certification prop changes (for edit mode)
   useEffect(() => {
-    if (experience) {
+    if (certification) {
       setFormData({
-        position: experience.position || '',
-        company: experience.company || '',
-        startDate: experience.startDate || '',
-        endDate: experience.endDate || '',
-        isPresent: experience.isPresent || false,
-        description: experience.description || '',
-        location: experience.location || '',
-        skills: experience.skills || []
+        name: certification.name || '',
+        issuer: certification.issuer || '',
+        startDate: certification.startDate || certification.date || '', // Backward compatibility
+        endDate: certification.endDate || '',
+        credentialId: certification.credentialId || '',
+        isPresent: certification.isPresent || false
       });
     } else {
       // Reset form for add mode
       setFormData({
-        position: '',
-        company: '',
+        name: '',
+        issuer: '',
         startDate: '',
         endDate: '',
-        isPresent: false,
-        description: '',
-        location: '',
-        skills: []
+        credentialId: '',
+        isPresent: false
       });
     }
-  }, [experience, mode, open]);
-
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [newSkill, setNewSkill] = useState('');
-  const [startDateOpen, setStartDateOpen] = useState(false);
-  const [endDateOpen, setEndDateOpen] = useState(false);
+  }, [certification, mode, open]);
 
   // Validate form data
   const validateForm = useCallback(() => {
     const errors: Record<string, string> = {};
 
     // Required fields
-    if (!formData.position.trim()) {
-      errors.position = 'Position is required';
+    if (!formData.name.trim()) {
+      errors.name = 'Certification name is required';
     }
-    if (!formData.company.trim()) {
-      errors.company = 'Company is required';
-    }
-    if (!formData.description.trim()) {
-      errors.description = 'Description is required';
+    if (!formData.issuer.trim()) {
+      errors.issuer = 'Issuer is required';
     }
     if (!formData.startDate) {
       errors.startDate = 'Start date is required';
@@ -87,7 +75,7 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
 
     // End date validation
     if (!formData.isPresent && !formData.endDate) {
-      errors.endDate = 'End date is required (or mark as current position)';
+      errors.endDate = 'End date is required (or mark as ongoing)';
     }
 
     // Date order validation
@@ -103,7 +91,7 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
     return Object.keys(errors).length === 0;
   }, [formData]);
 
-  const handleInputChange = useCallback((field: keyof Experience, value: any) => {
+  const handleInputChange = useCallback((field: keyof Certification, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -129,31 +117,18 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
     }
   }, [handleInputChange]);
 
-  const addSkill = useCallback(() => {
-    if (newSkill.trim() && !formData.skills?.includes(newSkill.trim())) {
-      handleInputChange('skills', [...(formData.skills || []), newSkill.trim()]);
-      setNewSkill('');
-    }
-  }, [newSkill, formData.skills, handleInputChange]);
-
-  const removeSkill = useCallback((skillToRemove: string) => {
-    handleInputChange('skills', formData.skills?.filter(skill => skill !== skillToRemove) || []);
-  }, [formData.skills, handleInputChange]);
-
   const handleSave = useCallback(() => {
     if (validateForm()) {
       onSave(formData);
       onClose();
       // Reset form for next use
       setFormData({
-        position: '',
-        company: '',
+        name: '',
+        issuer: '',
         startDate: '',
         endDate: '',
-        isPresent: false,
-        description: '',
-        location: '',
-        skills: []
+        credentialId: '',
+        isPresent: false
       });
       setValidationErrors({});
     }
@@ -166,14 +141,12 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
     // Reset form if in add mode
     if (mode === 'add') {
       setFormData({
-        position: '',
-        company: '',
+        name: '',
+        issuer: '',
         startDate: '',
         endDate: '',
-        isPresent: false,
-        description: '',
-        location: '',
-        skills: []
+        credentialId: '',
+        isPresent: false
       });
     }
   }, [onClose, mode]);
@@ -194,40 +167,40 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            {mode === 'add' ? 'Add New Experience' : 'Edit Experience'}
+            <Award className="w-5 h-5" />
+            {mode === 'add' ? 'Add New Certification' : 'Edit Certification'}
           </DialogTitle>
           <DialogDescription className="sr-only"></DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Position and Company */}
+          {/* Certification Name and Issuer */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField error={validationErrors.position}>
-              <Label htmlFor="experience-position" className="text-sm font-medium text-gray-700">
-                Position *
+            <FormField error={validationErrors.name}>
+              <Label htmlFor="cert-name" className="text-sm font-medium text-gray-700">
+                Certification Name *
               </Label>
               <Input
-                id="experience-position"
-                value={formData.position}
-                onChange={(e) => handleInputChange('position', e.target.value)}
-                placeholder="e.g. Senior Software Engineer"
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                error={!!validationErrors.position}
+                id="cert-name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="e.g. AWS Certified Solutions Architect"
+                className="border-gray-200 focus:border-orange-500 focus:ring-orange-500"
+                error={!!validationErrors.name}
               />
             </FormField>
 
-            <FormField error={validationErrors.company}>
-              <Label htmlFor="experience-company" className="text-sm font-medium text-gray-700">
-                Company *
+            <FormField error={validationErrors.issuer}>
+              <Label htmlFor="cert-issuer" className="text-sm font-medium text-gray-700">
+                Issuer *
               </Label>
               <Input
-                id="experience-company"
-                value={formData.company}
-                onChange={(e) => handleInputChange('company', e.target.value)}
-                placeholder="e.g. TechCorp Solutions"
-                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                error={!!validationErrors.company}
+                id="cert-issuer"
+                value={formData.issuer}
+                onChange={(e) => handleInputChange('issuer', e.target.value)}
+                placeholder="e.g. Amazon Web Services"
+                className="border-gray-200 focus:border-orange-500 focus:ring-orange-500"
+                error={!!validationErrors.issuer}
               />
             </FormField>
           </div>
@@ -242,7 +215,7 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal border-gray-200 focus:border-blue-500 focus:ring-blue-500",
+                        "w-full justify-start text-left font-normal border-gray-200 focus:border-orange-500 focus:ring-orange-500",
                         !formData.startDate && "text-muted-foreground",
                         validationErrors.startDate && "border-red-500"
                       )}
@@ -271,14 +244,14 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
                       variant="outline"
                       disabled={formData.isPresent}
                       className={cn(
-                        "w-full justify-start text-left font-normal border-gray-200 focus:border-blue-500 focus:ring-blue-500",
+                        "w-full justify-start text-left font-normal border-gray-200 focus:border-orange-500 focus:ring-orange-500",
                         (!formData.endDate || formData.isPresent) && "text-muted-foreground",
                         (validationErrors.endDate || validationErrors.dates) && "border-red-500"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.isPresent 
-                        ? "Present" 
+                        ? "Ongoing" 
                         : formData.endDate 
                           ? formatDateDisplay(formData.endDate) 
                           : "Select end date"}
@@ -294,7 +267,7 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
                         const startDate = formData.startDate ? new Date(formData.startDate) : null;
 
                         return date > today || (startDate ? date <= startDate : false);
-                      }}
+                        }}
                       initialFocus
                     />
                   </PopoverContent>
@@ -302,99 +275,34 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
               </FormField>
             </div>
 
-            {/* Present checkbox */}
+            {/* Ongoing checkbox */}
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is-present"
+                id="is-ongoing"
                 checked={formData.isPresent}
                 onCheckedChange={handlePresentChange}
               />
               <Label
-                htmlFor="is-present"
+                htmlFor="is-ongoing"
                 className="text-sm font-medium text-gray-700 cursor-pointer"
               >
-                I currently work here
+                This certification is ongoing
               </Label>
             </div>
           </div>
 
-          {/* Description */}
-          <FormField error={validationErrors.description}>
-            <Label htmlFor="experience-description" className="text-sm font-medium text-gray-700">
-              Description *
-            </Label>
-            <Textarea
-              id="experience-description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Describe your role, responsibilities, and key achievements..."
-              rows={4}
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 resize-none"
-              error={!!validationErrors.description}
-            />
-          </FormField>
-
-          {/* Location (Optional) */}
+          {/* Credential ID */}
           <div>
-            <Label htmlFor="experience-location" className="text-sm font-medium text-gray-700">
-              Location
+            <Label htmlFor="cert-credential" className="text-sm font-medium text-gray-700">
+              Credential ID
             </Label>
             <Input
-              id="experience-location"
-              value={formData.location || ''}
-              onChange={(e) => handleInputChange('location', e.target.value)}
-              placeholder="e.g. San Francisco, CA"
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              id="cert-credential"
+              value={formData.credentialId || ''}
+              onChange={(e) => handleInputChange('credentialId', e.target.value)}
+              placeholder="e.g. ABC123XYZ"
+              className="border-gray-200 focus:border-orange-500 focus:ring-orange-500"
             />
-          </div>
-
-          {/* Skills (Optional) */}
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Skills Used</Label>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  placeholder="Type a skill and click Add"
-                  className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addSkill();
-                    }
-                  }}
-                />
-                <Button 
-                  type="button" 
-                  onClick={addSkill}
-                  variant="outline"
-                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                >
-                  Add
-                </Button>
-              </div>
-              {formData.skills && formData.skills.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.skills.map((skill, index) => (
-                    <Badge 
-                      key={index} 
-                      variant="secondary" 
-                      className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
-                    >
-                      {skill}
-                      <button 
-                        onClick={() => removeSkill(skill)} 
-                        className="ml-1 hover:bg-red-500 hover:text-white rounded-full p-0.5 transition-colors"
-                        type="button"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -404,9 +312,9 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
           </Button>
           <Button 
             onClick={handleSave} 
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-orange-600 hover:bg-orange-700"
           >
-            {mode === 'add' ? 'Add Experience' : 'Save Changes'}
+            {mode === 'add' ? 'Add Certification' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

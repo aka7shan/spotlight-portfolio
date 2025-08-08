@@ -52,7 +52,10 @@ export interface Experience {
 export interface Education {
   degree: string;
   institution: string;
-  year: string;
+  startDate: string;
+  endDate?: string;
+  isPresent?: boolean;
+  year?: string; // Keep for backward compatibility
   gpa?: string;
   description?: string;
   achievements?: string[];
@@ -76,18 +79,21 @@ export interface Project {
 export interface Certification {
   name: string;
   issuer: string;
-  date: string;
+  startDate: string;
+  endDate?: string;
+  date?: string; // Keep for backward compatibility
   credentialId?: string;
   link?: string;
   expiryDate?: string;
+  isPresent?: boolean; // For ongoing certifications
 }
 
 export interface Achievement {
   title: string;
   description: string;
-  date: string;
+  startDate: string;
   organization?: string;
-  link?: string;
+  link?: string; // For ongoing achievements
 }
 
 export interface Language {
