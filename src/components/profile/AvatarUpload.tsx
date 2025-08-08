@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Camera, Upload, Trash2, ImagePlus } from "lucide-react";
+import { Camera, Trash2, ImagePlus } from "lucide-react";
 
 interface AvatarUploadProps {
   currentAvatar?: string;

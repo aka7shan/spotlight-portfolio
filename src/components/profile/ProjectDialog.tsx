@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -19,18 +19,50 @@ interface ProjectDialogProps {
 }
 
 export function ProjectDialog({ open, onClose, onSave, mode, project }: ProjectDialogProps) {
-  const [formData, setFormData] = useState<Project>(() => ({
-    name: project?.name || '',
-    description: project?.description || '',
-    tags: project?.tags || [],
-    status: project?.status || 'In Progress',
-    link: project?.link || '',
-    githubLink: project?.githubLink || '',
-    image: project?.image || '',
-    role: project?.role || '',
-    technologies: project?.technologies || [],
-    achievements: project?.achievements || []
-  }));
+  const [formData, setFormData] = useState<Project>({
+    name: '',
+    description: '',
+    tags: [],
+    status: 'In Progress',
+    link: '',
+    githubLink: '',
+    image: '',
+    role: '',
+    technologies: [],
+    achievements: []
+  });
+
+  // Update form data when project prop changes (for edit mode)
+  useEffect(() => {
+    if (project) {
+      setFormData({
+        name: project.name || '',
+        description: project.description || '',
+        tags: project.tags || [],
+        status: project.status || 'In Progress',
+        link: project.link || '',
+        githubLink: project.githubLink || '',
+        image: project.image || '',
+        role: project.role || '',
+        technologies: project.technologies || [],
+        achievements: project.achievements || []
+      });
+    } else {
+      // Reset form for add mode
+      setFormData({
+        name: '',
+        description: '',
+        tags: [],
+        status: 'In Progress',
+        link: '',
+        githubLink: '',
+        image: '',
+        role: '',
+        technologies: [],
+        achievements: []
+      });
+    }
+  }, [project, mode, open]);
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState('');
@@ -130,7 +162,7 @@ export function ProjectDialog({ open, onClose, onSave, mode, project }: ProjectD
 
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
-      <DialogContent className="w-[70vw] max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
@@ -293,7 +325,8 @@ export function ProjectDialog({ open, onClose, onSave, mode, project }: ProjectD
             />
           </div>
         </div>
-<DialogFooter className="gap-2">
+
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
@@ -305,7 +338,6 @@ export function ProjectDialog({ open, onClose, onSave, mode, project }: ProjectD
           </Button>
         </DialogFooter>
       </DialogContent>
-      
     </Dialog>
   );
 }
