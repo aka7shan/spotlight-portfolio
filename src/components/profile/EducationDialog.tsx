@@ -232,7 +232,15 @@ export function EducationDialog({ open, onClose, onSave, mode, education }: Educ
                       {formData.startDate ? formatDateDisplay(formData.startDate) : "Select start date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent 
+                      className="w-auto p-0" // Let content determine width
+                      align="center"
+                      style={{
+                        position: 'relative',
+                        top: '-200px',
+                        left: '90px',
+                      }}
+                    >
                     <EnhancedDatePicker
                       mode="single"
                       selected={formData.startDate ? new Date(formData.startDate) : undefined}
@@ -247,7 +255,7 @@ export function EducationDialog({ open, onClose, onSave, mode, education }: Educ
               <FormField error={validationErrors.endDate || validationErrors.dates}>
                 <Label className="text-sm font-medium text-gray-700">End Date</Label>
                 <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
-                  <PopoverTrigger asChild>
+                  <PopoverTrigger asChild >
                     <Button
                       variant="outline"
                       disabled={formData.isPresent}
@@ -265,7 +273,11 @@ export function EducationDialog({ open, onClose, onSave, mode, education }: Educ
                           : "Select end date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start" style={{
+                        position: 'relative',
+                        top: '-200px',
+                        right: '172px',
+                      }}>
                     <EnhancedDatePicker
                       mode="single"
                       selected={formData.endDate ? new Date(formData.endDate) : undefined}

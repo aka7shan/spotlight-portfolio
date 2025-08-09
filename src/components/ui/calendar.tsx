@@ -1,68 +1,63 @@
 "use client";
 
+import "react-day-picker/dist/style.css";
 import * as React from "react";
-// import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
-
 import { cn } from "./utils";
-import { buttonVariants } from "./button";
 
-function Calendar({
+export function Calendar({
   className,
-  classNames,
+  classNames = {},
+  styles = {},
   showOutsideDays = true,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
-      classNames={{
-        months: "flex flex-col sm:flex-row gap-2",
-        month: "flex flex-col gap-4",
-        caption: "flex justify-center pt-1 relative items-center w-full",
-        caption_label: "text-sm font-medium",
-        nav: "flex items-center gap-1",
-        nav_button: cn(
-          buttonVariants({ variant: "outline" }),
-          "size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-        ),
-        nav_button_previous: "absolute left-1",
-        nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-x-1",
-        head_row: "flex",
-        head_cell:
-          "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: cn(
-          "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-range-end)]:rounded-r-md",
-          props.mode === "range"
-            ? "[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md"
-            : "[&:has([aria-selected])]:rounded-md",
-        ),
-        day: cn(
-          buttonVariants({ variant: "ghost" }),
-          "size-8 p-0 font-normal aria-selected:opacity-100",
-        ),
-        day_range_start:
-          "day-range-start aria-selected:bg-primary aria-selected:text-primary-foreground",
-        day_range_end:
-          "day-range-end aria-selected:bg-primary aria-selected:text-primary-foreground",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
-        day_outside:
-          "day-outside text-muted-foreground aria-selected:text-muted-foreground",
-        day_disabled: "text-muted-foreground opacity-50",
-        day_range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
-        day_hidden: "invisible",
-        ...classNames,
+      className={cn("p-2", className)}
+      styles={{
+        caption: { display: 'outside' }, // This will completely hide the built-in caption
+        table: {
+          width: "100%",
+          tableLayout: "fixed",
+          borderCollapse: "collapse",
+        },
+        head_row: { display: "table-row" },
+        row: { display: "table-row" },
+        head_cell: {
+          display: "table-cell",
+          padding: "0.25rem",
+          textAlign: "center",
+          verticalAlign: "middle",
+        },
+        cell: {
+          display: "table-cell",
+          padding: 0,
+          textAlign: "center",
+          verticalAlign: "middle",
+          width: `${100 / 7}%`,
+        },
+        ...styles
       }}
-      // Removed unsupported 'components' prop to fix type error
+      classNames={{
+        months: "block",
+        month: "block",
+        // caption: "", // Double protection to hide caption
+        // caption_label: "hidden",
+        // nav: "hidden", // Hide navigation buttons if using custom ones
+        table: "w-full",
+        head_row: "",
+        head_cell: "text-gray-600 text-xs font-medium",
+        row: "",
+        cell: "",
+        day: "select-none",
+        day_today: "font-bold text-black-600",
+        day_outside: "text-gray-300",
+        day_disabled: "text-gray-300 opacity-50",
+        ...classNames
+      }}
       {...props}
     />
   );
 }
-
-export { Calendar };
