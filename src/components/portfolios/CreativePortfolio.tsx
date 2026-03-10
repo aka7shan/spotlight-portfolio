@@ -684,7 +684,7 @@ export function CreativePortfolio({ data, viewMode = 'desktop', isFullscreen = f
                               </div>
                               <Badge className={`bg-gradient-to-r ${currentTheme.primary} text-white border-0 mb-4`}>
                                 <Calendar className="w-3 h-3 mr-1" />
-                                {exp.duration}
+                                {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {exp.isPresent ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
                               </Badge>
                               <p className="text-gray-700 leading-relaxed">{exp.description}</p>
                             </CardContent>

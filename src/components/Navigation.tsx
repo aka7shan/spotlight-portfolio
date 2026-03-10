@@ -8,16 +8,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "./ui/dropdown-menu";
-import { Palette, Menu, X, User, LogOut } from "lucide-react";
+import { Palette, Menu, X, User as UserIcon, LogOut } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  title?: string;
-}
+import type { User } from "../types/portfolio";
 
 interface NavigationProps {
   currentPage: string;
@@ -160,7 +153,7 @@ export function Navigation({
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleProfileClick}>
-                    <User className="mr-2 h-4 w-4" />
+                    <UserIcon className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -253,7 +246,7 @@ export function Navigation({
                     className="w-full"
                     onClick={() => handleMobileAuthClick('profile')}
                   >
-                    <User className="mr-2 h-4 w-4" />
+                    <UserIcon className="mr-2 h-4 w-4" />
                     Profile
                   </Button>
                   <Button 

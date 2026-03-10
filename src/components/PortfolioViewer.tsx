@@ -38,55 +38,7 @@ import { ModernTechPortfolio } from "./portfolios/ModernTechPortfolio";
 import { CreativePortfolio } from "./portfolios/CreativePortfolio";
 import { MinimalistPortfolio } from "./portfolios/MinimalistPortfolio";
 import { CorporatePortfolio } from "./portfolios/CorporatePortfolio";
-
-interface PortfolioData {
-  personalInfo: {
-    name: string;
-    title: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    about: string;
-    avatar?: string;
-  };
-  skills: string[];
-  experience: Array<{
-    company: string;
-    position: string;
-    duration: string;
-    description: string;
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    year?: string;   
-    gpa?: string;
-  }>;
-  projects: Array<{
-    name: string;
-    description: string;
-    tags: string[];
-    image?: string;
-    link?: string;
-    status?: string;
-  }>;
-  certifications: Array<{
-    name: string;
-    issuer: string;
-    date: string;
-    description?: string;
-    link?: string;
-  }>;
-  achievements: Array<{
-    title: string;
-    description: string;
-    date: string;
-  }>;
-  languages: Array<{
-    name: string;
-    level: string;
-  }>;
-}
+import type { PortfolioData } from "../types/portfolio";
 
 interface PortfolioViewerProps {
   portfolioData: PortfolioData;

@@ -524,7 +524,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                             variant="outline" 
                             className="w-fit border-gray-300 text-gray-600 bg-transparent font-light px-3 py-1 rounded-none mt-2 md:mt-0"
                           >
-                            {exp.duration}
+                            {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {exp.isPresent ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
                           </Badge>
                         </div>
                         

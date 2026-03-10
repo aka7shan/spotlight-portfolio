@@ -434,7 +434,7 @@ export function ClassicPortfolio({ data = classicData, viewMode = 'desktop' }: P
                             variant="outline" 
                             className="w-fit border-amber-300 text-amber-700 bg-amber-50"
                           >
-                            {exp.duration}
+                            {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {exp.isPresent ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
                           </Badge>
                         </CardHeader>
                         <CardContent>

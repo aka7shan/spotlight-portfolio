@@ -6,39 +6,8 @@ import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { Checkbox } from "./ui/checkbox";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle, X } from "lucide-react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  title?: string;
-  location?: string;
-  phone?: string;
-  about?: string;
-  skills?: string[];
-  experience?: Array<{
-    company: string;
-    position: string;
-    duration: string;
-    description: string;
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    year?: string;   
-    gpa?: string;
-  }>;
-  projects?: Array<{
-    name: string;
-    description: string;
-    tags: string[];
-    image?: string;
-    link?: string;
-    status?: string;
-  }>;
-}
+import { Eye, EyeOff, Mail, Lock, User as UserIcon, ArrowRight, Sparkles, CheckCircle, X } from "lucide-react";
+import type { User } from "../types/portfolio";
 
 interface SignupPageProps {
   onNavigate: (page: string) => void;
@@ -152,7 +121,7 @@ export function SignupPage({ onNavigate, onSignup }: SignupPageProps) {
                 <div className="space-y-2">
                   <Label htmlFor="name">Full name</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       id="name"
                       type="text"

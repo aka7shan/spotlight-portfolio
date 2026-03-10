@@ -7,38 +7,7 @@ import { Separator } from "./ui/separator";
 import { Checkbox } from "./ui/checkbox";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  title?: string;
-  location?: string;
-  phone?: string;
-  about?: string;
-  skills?: string[];
-  experience?: Array<{
-    company: string;
-    position: string;
-    duration: string;
-    description: string;
-  }>;
-  education?: Array<{
-    institution: string;
-    degree: string;
-    year?: string;   
-    gpa?: string;
-  }>;
-  projects?: Array<{
-    name: string;
-    description: string;
-    tags: string[];
-    image?: string;
-    link?: string;
-    status?: string;
-  }>;
-}
+import type { User } from "../types/portfolio";
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -68,7 +37,8 @@ export function LoginPage({ onNavigate, onLogin }: LoginPageProps) {
         {
           company: "TechCorp Solutions",
           position: "Senior Product Designer",
-          duration: "2021 - Present",
+          startDate: "2021",
+          isPresent: true,
           description: "Leading design initiatives for enterprise SaaS products, collaborating with cross-functional teams to deliver user-centered solutions."
         }
       ],
@@ -76,7 +46,8 @@ export function LoginPage({ onNavigate, onLogin }: LoginPageProps) {
         {
           institution: "Design University",
           degree: "Bachelor of Fine Arts in Design",
-          duration: "2015 - 2019",
+          startDate: "2015",
+          endDate: "2019",
           description: "Graduated with honors, focused on digital design and user experience."
         }
       ]
@@ -95,7 +66,8 @@ export function LoginPage({ onNavigate, onLogin }: LoginPageProps) {
         {
           company: "Design Studio",
           position: "UX Designer",
-          duration: "2020 - Present",
+          startDate: "2020",
+          isPresent: true,
           description: "Designing user experiences for mobile and web applications across various industries."
         }
       ]

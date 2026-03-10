@@ -15,61 +15,14 @@ import {
   Layers,
   Rocket,
   Heart,
-  User,
+  User as UserIcon,
   AlertCircle,
   Briefcase,
   GraduationCap,
   Award
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  title?: string;
-  location?: string;
-  phone?: string;
-  about?: string;
-  skills?: string[];
-  experience?: Array<{
-    company: string;
-    position: string;
-    duration: string;
-    description: string;
-  }>;
-  education?: Array<{
-    degree: string;
-    institution: string;
-    year?: string;
-    gpa?: string;
-  }>;
-  projects?: Array<{
-    name: string;
-    description: string;
-    tags: string[];
-    image?: string;
-    link?: string;
-    status?: string;
-  }>;
-  certifications?: Array<{
-    name: string;
-    issuer: string;
-    date: string;
-    description?: string;
-    link?: string;
-  }>;
-  achievements?: Array<{
-    title: string;
-    description: string;
-    date: string;
-  }>;
-  languages?: Array<{
-    name: string;
-    level: string;
-  }>;
-}
+import type { User } from "../types/portfolio";
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
@@ -140,7 +93,7 @@ export function HomePage({ onNavigate, user }: HomePageProps) {
       missing.push({
         title: "Complete Basic Info",
         description: "Add your name, title, and professional summary",
-        icon: User,
+        icon: UserIcon,
         action: "profile"
       });
     }
@@ -295,7 +248,7 @@ export function HomePage({ onNavigate, user }: HomePageProps) {
                         onClick={() => onNavigate('profile')}
                         className="border-2 hover:bg-primary/5 transition-all duration-300 px-8"
                       >
-                        <User className="w-4 h-4 mr-2" />
+                        <UserIcon className="w-4 h-4 mr-2" />
                         Edit Profile
                       </Button>
                     </motion.div>
@@ -308,7 +261,7 @@ export function HomePage({ onNavigate, user }: HomePageProps) {
                         onClick={() => onNavigate('profile')}
                         className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 px-8"
                       >
-                        <User className="w-5 h-5 mr-2" />
+                        <UserIcon className="w-5 h-5 mr-2" />
                         Complete Profile
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
@@ -472,7 +425,7 @@ export function HomePage({ onNavigate, user }: HomePageProps) {
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
                       <Button variant="outline" onClick={() => onNavigate('profile')}>
-                        <User className="w-4 h-4 mr-2" />
+                        <UserIcon className="w-4 h-4 mr-2" />
                         Edit Profile
                       </Button>
                     </div>

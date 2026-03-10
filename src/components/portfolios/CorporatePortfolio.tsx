@@ -723,7 +723,7 @@ export function CorporatePortfolio({ data = corporateData, viewMode = 'desktop' 
                             </div>
                             <Badge className="w-fit bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 px-4 py-2">
                               <Calendar className="w-4 h-4 mr-2" />
-                              {exp.duration}
+                              {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {exp.isPresent ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
                             </Badge>
                           </div>
                           <p className="text-gray-700 leading-relaxed text-lg mb-6">
