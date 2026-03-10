@@ -10,7 +10,6 @@ import { ChatWidget } from "./components/ChatWidget";
 import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
 import type { User, PortfolioData } from "./types/portfolio";
 import { portfolioDataManager } from "./utils/portfolioDataManager";
-// import { initScrollbarFixes } from "./utils/scrollbarFix";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
@@ -25,18 +24,10 @@ export default function App() {
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
-  // // Initialize scrollbar fixes on app mount
-  // useEffect(() => {
-  //   const cleanup = initScrollbarFixes();
-  //   return cleanup;
-  // }, []);
-
-  // Load user data from localStorage on app start
   useEffect(() => {
     const savedUser = portfolioDataManager.loadUserData('current-user');
     if (savedUser) {
       setUser(savedUser);
-      console.log('Loaded user data from localStorage:', savedUser);
     }
   }, []);
 
@@ -93,7 +84,6 @@ export default function App() {
       setSelectedTemplate(templateId);
       setIsPreviewMode(false);
       setCurrentPage('portfolio-viewer');
-      console.log('Generated portfolio data from user:', data);
     }
   }, [user]);
 
@@ -103,7 +93,6 @@ export default function App() {
     setSelectedTemplate(templateId);
     setIsPreviewMode(true);
     setCurrentPage('portfolio-viewer');
-    console.log('Using dummy data for preview:', dummyData);
   }, []);
 
   const handleTemplateSwitch = useCallback((templateId: string) => {

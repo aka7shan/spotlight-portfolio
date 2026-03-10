@@ -48,7 +48,6 @@ class PortfolioDataManagerImpl implements PortfolioDataManager {
       const exportData = JSON.stringify(portfolioData, null, 2);
       localStorage.setItem(this.EXPORT_KEY, exportData);
       
-      console.log('User data saved to localStorage:', userData);
     } catch (error) {
       console.error('Failed to save user data:', error);
     }
@@ -60,7 +59,6 @@ class PortfolioDataManagerImpl implements PortfolioDataManager {
       const storedData = localStorage.getItem(this.STORAGE_KEY);
       if (storedData) {
         const userData = JSON.parse(storedData) as User;
-        console.log('User data loaded from localStorage:', userData);
         return userData;
       }
     } catch (error) {
@@ -151,46 +149,6 @@ class PortfolioDataManagerImpl implements PortfolioDataManager {
     );
   }
 
-  // Generate sample projects for demo
-  generateSampleProjects(): any[] {
-    return [
-      {
-        name: "E-commerce Platform",
-        description: "Full-stack e-commerce solution with React frontend and Node.js backend. Features include user authentication, product catalog, shopping cart, and payment integration.",
-        tags: ["React", "Node.js", "MongoDB", "Stripe", "TypeScript"],
-        image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=300&fit=crop",
-        link: "https://demo-ecommerce.com",
-        githubLink: "https://github.com/user/ecommerce-platform",
-        status: "Completed",
-        role: "Full Stack Developer",
-        technologies: ["React", "Node.js", "Express", "MongoDB", "Stripe API"],
-        achievements: ["Increased conversion rate by 25%", "Handled 10k+ concurrent users"]
-      },
-      {
-        name: "Task Management App",
-        description: "Collaborative task management application with real-time updates, team collaboration features, and advanced filtering options.",
-        tags: ["Vue.js", "Firebase", "PWA", "Real-time"],
-        image: "https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=500&h=300&fit=crop",
-        link: "https://taskmaster-app.com",
-        githubLink: "https://github.com/user/task-manager",
-        status: "In Progress",
-        role: "Frontend Lead",
-        technologies: ["Vue.js", "Firebase", "PWA", "Socket.io"],
-        achievements: ["500+ active users", "Featured in Vue.js newsletter"]
-      },
-      {
-        name: "Data Visualization Dashboard",
-        description: "Interactive dashboard for displaying complex data analytics with customizable charts, filters, and real-time data streaming.",
-        tags: ["D3.js", "Python", "Flask", "PostgreSQL"],
-        image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&h=300&fit=crop",
-        link: "https://analytics-dashboard.com",
-        status: "Completed",
-        role: "Data Visualization Developer",
-        technologies: ["D3.js", "React", "Python", "Flask", "PostgreSQL"],
-        achievements: ["Reduced data processing time by 60%", "Improved decision making speed"]
-      }
-    ];
-  }
 }
 
 // Export singleton instance
