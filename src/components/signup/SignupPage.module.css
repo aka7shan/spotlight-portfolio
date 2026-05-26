@@ -1,0 +1,37 @@
+/* SignupPage.module.css */
+
+.primaryGradientButton {
+  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700;
+}
+
+.badgePill {
+  @apply inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full mb-6 border border-primary/20;
+}
+
+.cardHover {
+  @apply border-2 hover:border-primary/20 transition-colors duration-300;
+}
+
+.inputWrapper {
+  @apply relative;
+}
+
+.iconAbsolute {
+  @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4;
+}
+
+.togglePassword {
+  @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground;
+}
+
+.benefitsBox {
+  @apply mt-6 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800;
+}
+
+.benefitsTitle {
+  @apply font-medium text-green-900 dark:text-green-100 mb-3;
+}
+
+.benefitsText {
+  @apply space-y-2 text-sm text-green-700 dark:text-green-300;
+}

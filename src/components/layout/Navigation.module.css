@@ -1,0 +1,37 @@
+/* Navigation.module.css */
+
+.navBar {
+  @apply fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200;
+}
+
+.logoIcon {
+  @apply w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mr-3;
+}
+
+.logoText {
+  @apply text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent;
+}
+
+.navItemActive {
+  @apply text-primary border-b-2 border-primary;
+}
+
+.navItemInactive {
+  @apply text-gray-600 hover:text-primary;
+}
+
+.primaryGradientButton {
+  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700;
+}
+
+.mobileNavItemActive {
+  @apply text-primary bg-primary/10;
+}
+
+.mobileNavItemInactive {
+  @apply text-gray-600 hover:text-primary hover:bg-gray-50;
+}
+
+.mobileSignupButton {
+  @apply w-full bg-gradient-to-r from-purple-600 to-blue-600;
+}

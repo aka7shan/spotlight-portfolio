@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "../../ui/button";
 import { Eye, Heart, Sparkles } from "lucide-react";
-import { ImageWithFallback } from "../../figma/ImageWithFallback";
+import { ImageWithFallback } from "../../common/ImageWithFallback";
 
 interface ClassicHeroProps {
   personalInfo: {

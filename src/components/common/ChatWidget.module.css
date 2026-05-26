@@ -1,0 +1,37 @@
+/* ChatWidget.module.css */
+
+.chatButton {
+  @apply w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 border-0 hover:scale-105;
+}
+
+.tooltip {
+  @apply absolute right-16 bottom-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap;
+}
+
+.chatCard {
+  @apply w-full h-full shadow-2xl border-2 border-primary/20;
+}
+
+.chatHeader {
+  @apply bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-t-lg;
+}
+
+.aiAvatar {
+  @apply w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0;
+}
+
+.messageBubble {
+  @apply bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm max-w-[80%];
+}
+
+.inputArea {
+  @apply p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800;
+}
+
+.inputField {
+  @apply flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent;
+}
+
+.sendButton {
+  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-3 py-2;
+}

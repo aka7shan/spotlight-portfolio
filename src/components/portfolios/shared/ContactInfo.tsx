@@ -16,7 +16,7 @@ interface ContactInfoProps {
 }
 
 export function ContactInfo({ items, variant = 'classic', delay = 0 }: ContactInfoProps) {
-  const getVariantStyles = (item: ContactItem, index: number) => {
+  const getVariantStyles = () => {
     switch (variant) {
       case 'modern':
         return {
@@ -83,7 +83,7 @@ export function ContactInfo({ items, variant = 'classic', delay = 0 }: ContactIn
       className="space-y-4"
     >
       {items.filter(item => item.value).map((item, index) => {
-        const styles = getVariantStyles(item, index);
+        const styles = getVariantStyles();
         
         return (
           <motion.a

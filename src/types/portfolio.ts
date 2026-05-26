@@ -135,13 +135,8 @@ export interface PortfolioProps {
   isFullscreen?: boolean;
 }
 
-// Portfolio generation utilities
-export interface PortfolioDataManager {
-  generateFromUser: (user: User) => PortfolioData;
-  saveUserData: (user: User) => void;
-  loadUserData: (userId: string) => User | null;
-  getDummyData: (templateId: string) => PortfolioData;
-  exportAsJSON: (data: PortfolioData) => string;
-  importFromJSON: (json: string) => PortfolioData;
-  isProfileComplete: (user: User) => boolean;
-}
+// Note: the runtime portfolioDataManager lives in src/utils/portfolioDataManager.ts.
+// Its public surface used to be described here, but Phase 0 moved persistence
+// off of localStorage onto the backend API, which changed several methods to
+// be async. We no longer maintain a hand-written interface — the singleton's
+// TypeScript types are inferred from its class.

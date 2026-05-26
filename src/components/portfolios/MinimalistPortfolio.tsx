@@ -1,51 +1,55 @@
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Download,
-  ExternalLink,
+import { motion } from "framer-motion";
+import {
+  Mail,
+  Phone,
+  MapPin,
   ArrowRight,
-  ArrowDown,
   Circle,
-  Minus,
-  Plus,
-  Target,
-  User,
   Briefcase,
   Folder,
-  Send,
-  Home,
-  Calendar,
-  Building,
-  Globe,
-  Linkedin,
   Github,
+  Linkedin,
+  Globe,
   Coffee,
-  Eye,
-  ChevronDown
+  ChevronDown,
 } from "lucide-react";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { ImageWithFallback } from "../common/ImageWithFallback";
 import type { PortfolioProps } from "../../types/portfolio";
 import { minimalistData } from "../../constants/portfolioData";
+import { SectionHeader } from "./shared/SectionHeader";
+import { SectionContainer } from "./shared/SectionContainer";
+import { formatDateRange } from "../../utils/formatDate";
 
-export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop' }: PortfolioProps) {
+const SECTIONS = [
+  { id: "home", label: "Home", number: "01" },
+  { id: "about", label: "About", number: "02" },
+  { id: "skills", label: "Skills", number: "03" },
+  { id: "projects", label: "Work", number: "04" },
+  { id: "experience", label: "Path", number: "05" },
+  { id: "contact", label: "Contact", number: "06" },
+];
+
+const HEADER_THEME = {
+  titleClass: "text-4xl font-light text-gray-900",
+  dividerClass: "w-16 h-px bg-gray-900 rounded-none",
+  align: "center" as const,
+};
+
+export function MinimalistPortfolio({ data = minimalistData }: PortfolioProps) {
   const portfolioData = data || minimalistData;
   const [activeSection, setActiveSection] = useState("home");
   const [scrollProgress, setScrollProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  const sections = [
-    { id: "home", label: "Home", number: "01" },
-    { id: "about", label: "About", number: "02" },
-    { id: "skills", label: "Skills", number: "03" },
-    { id: "projects", label: "Work", number: "04" },
-    { id: "experience", label: "Path", number: "05" },
-    { id: "contact", label: "Contact", number: "06" }
-  ];
+  const MinimalistSectionHeader = ({ number, title }: { number: string; title: string }) => (
+    <div className="text-center space-y-4">
+      <div className="text-sm text-gray-400 uppercase tracking-widest">{number}</div>
+      <SectionHeader title={title} {...HEADER_THEME} />
+    </div>
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -190,13 +194,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-16"
               >
-                {/* Section Header */}
-                <div className="text-center space-y-4">
-                  <div className="text-sm text-gray-400 uppercase tracking-widest">02</div>
-                  <h2 className="text-4xl font-light text-gray-900">About</h2>
-                  <div className="w-16 h-px bg-gray-900 mx-auto" />
-                </div>
-
+                <MinimalistSectionHeader number="02" title="About" />
                 {/* Content Grid */}
                 <div className="grid md:grid-cols-2 gap-16">
                   <div className="space-y-8">
@@ -284,13 +282,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-16"
               >
-                {/* Section Header */}
-                <div className="text-center space-y-4">
-                  <div className="text-sm text-gray-400 uppercase tracking-widest">03</div>
-                  <h2 className="text-4xl font-light text-gray-900">Skills</h2>
-                  <div className="w-16 h-px bg-gray-900 mx-auto" />
-                </div>
-
+                <MinimalistSectionHeader number="03" title="Skills" />
                 {/* Skills Grid */}
                 <div className="grid md:grid-cols-2 gap-16">
                   <div className="space-y-12">
@@ -394,13 +386,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-16"
               >
-                {/* Section Header */}
-                <div className="text-center space-y-4">
-                  <div className="text-sm text-gray-400 uppercase tracking-widest">04</div>
-                  <h2 className="text-4xl font-light text-gray-900">Selected Work</h2>
-                  <div className="w-16 h-px bg-gray-900 mx-auto" />
-                </div>
-
+                <MinimalistSectionHeader number="04" title="Selected Work" />
                 {portfolioData.projects && portfolioData.projects.length > 0 ? (
                   <div className="space-y-24">
                     {portfolioData.projects.map((project, index) => (
@@ -494,13 +480,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-16"
               >
-                {/* Section Header */}
-                <div className="text-center space-y-4">
-                  <div className="text-sm text-gray-400 uppercase tracking-widest">05</div>
-                  <h2 className="text-4xl font-light text-gray-900">Experience</h2>
-                  <div className="w-16 h-px bg-gray-900 mx-auto" />
-                </div>
-
+                <MinimalistSectionHeader number="05" title="Experience" />
                 <div className="space-y-16">
                   {portfolioData.experience?.map((exp, index) => (
                     <motion.div
@@ -520,11 +500,11 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                             <h3 className="text-xl font-light text-gray-900">{exp.position}</h3>
                             <p className="text-gray-600 font-light">{exp.company}</p>
                           </div>
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className="w-fit border-gray-300 text-gray-600 bg-transparent font-light px-3 py-1 rounded-none mt-2 md:mt-0"
                           >
-                            {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {exp.isPresent ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
+                            {formatDateRange(exp.startDate, exp.endDate, exp.isPresent)}
                           </Badge>
                         </div>
                         
@@ -557,13 +537,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-16"
               >
-                {/* Section Header */}
-                <div className="text-center space-y-4">
-                  <div className="text-sm text-gray-400 uppercase tracking-widest">06</div>
-                  <h2 className="text-4xl font-light text-gray-900">Contact</h2>
-                  <div className="w-16 h-px bg-gray-900 mx-auto" />
-                </div>
-
+                <MinimalistSectionHeader number="06" title="Contact" />
                 <div className="grid md:grid-cols-2 gap-16">
                   <div className="space-y-12">
                     <div>
@@ -684,7 +658,7 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
         </div>
         
         <nav className="space-y-2">
-          {sections.map((section) => (
+          {SECTIONS.map((section) => (
             <motion.button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
@@ -705,23 +679,12 @@ export function MinimalistPortfolio({ data = minimalistData, viewMode = 'desktop
       <div className="fixed top-4 right-8 z-50">
         <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2">
           <div className="text-xs text-gray-500 font-light uppercase tracking-wider">
-            {sections.find(s => s.id === activeSection)?.number} — {sections.find(s => s.id === activeSection)?.label}
+            {SECTIONS.find((s) => s.id === activeSection)?.number} — {SECTIONS.find((s) => s.id === activeSection)?.label}
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeSection}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-        >
-          {renderSection()}
-        </motion.div>
-      </AnimatePresence>
+      <SectionContainer activeSection={activeSection}>{renderSection()}</SectionContainer>
     </div>
   );
 }

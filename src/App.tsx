@@ -1,270 +1,327 @@
-import { useState, useEffect, useCallback } from "react";
-import { Navigation } from "./components/Navigation";
-import { HomePage } from "./components/HomePage";
-import { LoginPage } from "./components/LoginPage";
-import { SignupPage } from "./components/SignupPage";
-import { PortfolioGallery } from "./components/PortfolioGallery";
-import { ProfilePage } from "./components/ProfilePage";
-import { PortfolioViewer } from "./components/PortfolioViewer";
-import { ChatWidget } from "./components/ChatWidget";
-import { UnsavedChangesDialog } from "./components/UnsavedChangesDialog";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Toaster, toast } from "sonner";
+import { Navigation } from "./components/layout/Navigation";
+import { HomePage } from "./components/home/HomePage";
+import { ChatWidget } from "./components/common/ChatWidget";
+import { UnsavedChangesDialog } from "./components/common/UnsavedChangesDialog";
+import { SetupRequired } from "./components/common/SetupRequired";
 import type { User, PortfolioData } from "./types/portfolio";
 import { portfolioDataManager } from "./utils/portfolioDataManager";
+import { useAuth } from "./hooks/useAuth";
+import { useProfile } from "./hooks/useProfile";
+
+// Routes that aren't visited on first paint are code-split into separate chunks
+// so the home page can render with the smallest possible JS payload.
+const LoginPage = lazy(() =>
+  import("./components/login/LoginPage").then(m => ({ default: m.LoginPage })),
+);
+const SignupPage = lazy(() =>
+  import("./components/signup/SignupPage").then(m => ({ default: m.SignupPage })),
+);
+const PortfolioGallery = lazy(() =>
+  import("./components/gallery/PortfolioGallery").then(m => ({ default: m.PortfolioGallery })),
+);
+const ProfilePage = lazy(() =>
+  import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })),
+);
+const PortfolioViewer = lazy(() =>
+  import("./components/viewer/PortfolioViewer").then(m => ({ default: m.PortfolioViewer })),
+);
+
+const RouteFallback = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="h-10 w-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<string>('home');
-  const [user, setUser] = useState<User | null>(null);
+  const { status: authStatus, user: authUser, isConfigured, signOut } = useAuth();
+  const { user, status: profileStatus, error: profileError, reload, save } = useProfile();
+
+  // What the Navigation should show. If we're authenticated but the profile
+  // call hasn't returned yet (or failed), still show "signed-in" UI using the
+  // auth user as a fallback — otherwise the user sees Login/Signup buttons
+  // while they're actually signed in, which is super confusing.
+  const navUser: User | null = user ?? (
+    authStatus === "authenticated" && authUser
+      ? {
+          id: authUser.id,
+          email: authUser.email ?? "",
+          name:
+            (authUser.user_metadata?.name as string | undefined) ||
+            authUser.email?.split("@")[0] ||
+            "You",
+          avatar: (authUser.user_metadata?.avatar_url as string | undefined) ?? "",
+        }
+      : null
+  );
+
+  const [currentPage, setCurrentPage] = useState<string>("home");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [changedSections, setChangedSections] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  
-  // Unsaved changes dialog state
+
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
+  // Auth-driven routing. Two concerns:
+  //   - Authed users should never sit on login / signup pages (they'd be stuck
+  //     because those pages have no "you're already in" UI).
+  //   - When the auth listener fires "signed out" we wipe transient UI state
+  //     so a re-login doesn't inherit somebody else's selected template.
+  const prevAuthRef = useRef(authStatus);
   useEffect(() => {
-    const savedUser = portfolioDataManager.loadUserData('current-user');
-    if (savedUser) {
-      setUser(savedUser);
+    const prev = prevAuthRef.current;
+    prevAuthRef.current = authStatus;
+
+    if (authStatus === "authenticated") {
+      // Redirect away from auth pages whenever we're authed, even if there's no
+      // status *transition* (e.g. user already had a session and just hit /login).
+      setCurrentPage((page) =>
+        page === "login" || page === "signup" || page === "home" ? "profile" : page,
+      );
     }
-  }, []);
+    if (prev === "authenticated" && authStatus === "unauthenticated") {
+      setCurrentPage("home");
+      setHasUnsavedChanges(false);
+      setChangedSections([]);
+      setSelectedTemplate(null);
+      setPortfolioData(null);
+      setIsPreviewMode(false);
+    }
+  }, [authStatus]);
 
   const handleNavigate = useCallback((page: string) => {
     setCurrentPage(page);
   }, []);
 
-  // Handle navigation requests with unsaved changes check
-  const handleNavigationRequest = useCallback((page: string) => {
-    // If we're on the profile page and have unsaved changes, show dialog
-    if (currentPage === 'profile' && hasUnsavedChanges) {
-      setPendingNavigation(page);
-      setShowUnsavedDialog(true);
-    } else {
-      // Navigate directly if no unsaved changes
-      handleNavigate(page);
-    }
-  }, [currentPage, hasUnsavedChanges, handleNavigate]);
+  const handleNavigationRequest = useCallback(
+    (page: string) => {
+      if (currentPage === "profile" && hasUnsavedChanges) {
+        setPendingNavigation(page);
+        setShowUnsavedDialog(true);
+      } else {
+        handleNavigate(page);
+      }
+    },
+    [currentPage, hasUnsavedChanges, handleNavigate],
+  );
 
-  // Handle saving changes and navigation
   const handleDialogSave = useCallback(() => {
-    // The ProfilePage component should handle the actual saving
-    // We'll trigger this through the ProfilePage's save function
+    // Actual save lives in ProfilePage; here we just close and continue.
     setShowUnsavedDialog(false);
-    
     if (pendingNavigation) {
       handleNavigate(pendingNavigation);
       setPendingNavigation(null);
     }
   }, [pendingNavigation, handleNavigate]);
 
-  // Handle discarding changes and navigation
   const handleDialogDiscard = useCallback(() => {
     setHasUnsavedChanges(false);
     setChangedSections([]);
     setShowUnsavedDialog(false);
-    
     if (pendingNavigation) {
       handleNavigate(pendingNavigation);
       setPendingNavigation(null);
     }
   }, [pendingNavigation, handleNavigate]);
 
-  // Handle dialog close
   const handleDialogClose = useCallback(() => {
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
   }, []);
 
-  const handleTemplateSelect = useCallback((templateId: string) => {
-    if (user && portfolioDataManager.isProfileComplete(user)) {
-      const data = portfolioDataManager.generateFromUser(user);
-      setPortfolioData(data);
-      setSelectedTemplate(templateId);
-      setIsPreviewMode(false);
-      setCurrentPage('portfolio-viewer');
-    }
-  }, [user]);
+  const handleTemplateSelect = useCallback(
+    (templateId: string) => {
+      if (user && portfolioDataManager.isProfileComplete(user)) {
+        setPortfolioData(portfolioDataManager.generateFromUser(user));
+        setSelectedTemplate(templateId);
+        setIsPreviewMode(false);
+        setCurrentPage("portfolio-viewer");
+      }
+    },
+    [user],
+  );
 
   const handleTemplatePreview = useCallback((templateId: string) => {
-    const dummyData = portfolioDataManager.getDummyData(templateId);
-    setPortfolioData(dummyData);
+    setPortfolioData(portfolioDataManager.getDummyData(templateId));
     setSelectedTemplate(templateId);
     setIsPreviewMode(true);
-    setCurrentPage('portfolio-viewer');
+    setCurrentPage("portfolio-viewer");
   }, []);
 
-  const handleTemplateSwitch = useCallback((templateId: string) => {
-    setSelectedTemplate(templateId);
-    if (isPreviewMode) {
-      // Update with new dummy data when in preview mode
-      const dummyData = portfolioDataManager.getDummyData(templateId);
-      setPortfolioData(dummyData);
-    } else if (user) {
-      // Update with user data when not in preview mode
-      const userData = portfolioDataManager.generateFromUser(user);
-      setPortfolioData(userData);
-    }
-  }, [isPreviewMode, user]);
+  const handleTemplateSwitch = useCallback(
+    (templateId: string) => {
+      setSelectedTemplate(templateId);
+      if (isPreviewMode) {
+        setPortfolioData(portfolioDataManager.getDummyData(templateId));
+      } else if (user) {
+        setPortfolioData(portfolioDataManager.generateFromUser(user));
+      }
+    },
+    [isPreviewMode, user],
+  );
 
   const handleBackToGallery = useCallback(() => {
-    setCurrentPage('portfolios');
+    setCurrentPage("portfolios");
     setSelectedTemplate(null);
     setPortfolioData(null);
     setIsPreviewMode(false);
   }, []);
 
-  const handleLogin = useCallback((userData: User) => {
-    setUser(userData);
-    portfolioDataManager.saveUserData(userData);
-    setCurrentPage('profile'); // Navigate to profile after login
-  }, []);
-
-  const handleSignup = useCallback((userData: User) => {
-    setUser(userData);
-    portfolioDataManager.saveUserData(userData);
-    setCurrentPage('profile'); // Navigate to profile after signup
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    setUser(null);
-    setCurrentPage('home');
-    setHasUnsavedChanges(false);
-    setChangedSections([]);
-    setSelectedTemplate(null);
-    setPortfolioData(null);
-    setIsPreviewMode(false);
-    // Clear localStorage data
-    localStorage.removeItem('portfolio_user_data');
-    localStorage.removeItem('portfolio_exported_data');
-  }, []);
-
-  const handleUpdateProfile = useCallback((updatedUser: User) => {
-    setUser(updatedUser);
-    setHasUnsavedChanges(false);
-    setChangedSections([]);
-    
-    // Save to localStorage using data manager
-    portfolioDataManager.saveUserData(updatedUser);
-    
-    // Update portfolio data if we're currently viewing a portfolio and not in preview mode
-    if (currentPage === 'portfolio-viewer' && !isPreviewMode && portfolioDataManager.isProfileComplete(updatedUser)) {
-      const newData = portfolioDataManager.generateFromUser(updatedUser);
-      setPortfolioData(newData);
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sign out";
+      toast.error(message);
     }
-  }, [currentPage, isPreviewMode]);
+  }, [signOut]);
+
+  const handleUpdateProfile = useCallback(
+    async (updatedUser: User) => {
+      try {
+        const saved = await save(updatedUser);
+        setHasUnsavedChanges(false);
+        setChangedSections([]);
+        if (
+          currentPage === "portfolio-viewer" &&
+          !isPreviewMode &&
+          portfolioDataManager.isProfileComplete(saved)
+        ) {
+          setPortfolioData(portfolioDataManager.generateFromUser(saved));
+        }
+        toast.success("Profile saved");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to save profile";
+        toast.error(message);
+      }
+    },
+    [currentPage, isPreviewMode, save],
+  );
 
   const handleProfileChange = useCallback((sections: string[]) => {
     setHasUnsavedChanges(sections.length > 0);
     setChangedSections(sections);
   }, []);
 
-  // Special handler for ProfilePage that includes saving functionality
-  const handleProfileNavigationRequest = useCallback((destination: string) => {
-    if (hasUnsavedChanges) {
-      setPendingNavigation(destination);
-      setShowUnsavedDialog(true);
-    } else {
-      if (destination.includes('Tab')) {
-        // This is handled within ProfilePage for tab navigation
-        return;
-      } else {
-        // Handle page navigation
+  const handleProfileNavigationRequest = useCallback(
+    (destination: string) => {
+      if (hasUnsavedChanges) {
+        setPendingNavigation(destination);
+        setShowUnsavedDialog(true);
+      } else if (!destination.includes("Tab")) {
         handleNavigate(destination);
       }
-    }
-  }, [hasUnsavedChanges, handleNavigate]);
+    },
+    [hasUnsavedChanges, handleNavigate],
+  );
 
-  // Add beforeunload listener for unsaved changes
   useEffect(() => {
+    if (!hasUnsavedChanges) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
+      e.preventDefault();
+      e.returnValue = "";
     };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // ---------------------------------------------------------------------------
+  // Early returns: setup screen + initial auth bootstrap
+  // ---------------------------------------------------------------------------
+
+  if (!isConfigured) return <SetupRequired />;
+
+  if (authStatus === "loading") return <RouteFallback />;
+
+  const isAuthed = authStatus === "authenticated";
+  const isProfileLoading = isAuthed && profileStatus === "loading" && !user;
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation 
-        currentPage={currentPage} 
+      <Navigation
+        currentPage={currentPage}
         onNavigate={handleNavigate}
         onNavigationRequest={handleNavigationRequest}
-        user={user}
+        user={navUser}
         onLogout={handleLogout}
       />
-      
-      {currentPage === 'home' && (
-        <HomePage 
-          onNavigate={handleNavigationRequest} 
-          user={user} 
-        />
-      )}
-      
-      {currentPage === 'login' && (
-        <LoginPage 
-          onNavigate={handleNavigationRequest} 
-          onLogin={handleLogin} 
-        />
-      )}
-      
-      {currentPage === 'signup' && (
-        <SignupPage 
-          onNavigate={handleNavigationRequest} 
-          onSignup={handleSignup} 
-        />
-      )}
-      
-      {currentPage === 'portfolios' && (
-        <PortfolioGallery 
-          onNavigate={handleNavigationRequest} 
-          user={user}
-          onTemplateSelect={handleTemplateSelect}
-          onTemplatePreview={handleTemplatePreview}
-          isProfileComplete={user ? portfolioDataManager.isProfileComplete(user) : false}
-        />
-      )}
-      
-      {currentPage === 'portfolio-viewer' && portfolioData && selectedTemplate && (
-        <PortfolioViewer
-          portfolioData={portfolioData}
-          selectedTemplate={selectedTemplate}
-          onTemplateSwitch={handleTemplateSwitch}
-          onBackToGallery={handleBackToGallery}
-          onEditProfile={() => handleNavigationRequest('profile')}
-          isPreviewMode={isPreviewMode}
-          user={user}
-        />
-      )}
-      
-      {currentPage === 'profile' && user && (
-        <ProfilePage 
-          user={user} 
-          onNavigate={handleProfileNavigationRequest} 
-          onUpdateProfile={handleUpdateProfile}
-          onProfileChange={handleProfileChange}
-          hasUnsavedChanges={hasUnsavedChanges}
-          changedSections={changedSections}
-        />
-      )}
 
-      {/* Global Unsaved Changes Dialog */}
+      <Suspense fallback={<RouteFallback />}>
+        {currentPage === "home" && <HomePage onNavigate={handleNavigationRequest} user={user} />}
+
+        {currentPage === "login" && <LoginPage onNavigate={handleNavigationRequest} />}
+
+        {currentPage === "signup" && <SignupPage onNavigate={handleNavigationRequest} />}
+
+        {currentPage === "portfolios" && (
+          <PortfolioGallery
+            onNavigate={handleNavigationRequest}
+            user={user}
+            onTemplateSelect={handleTemplateSelect}
+            onTemplatePreview={handleTemplatePreview}
+            isProfileComplete={user ? portfolioDataManager.isProfileComplete(user) : false}
+          />
+        )}
+
+        {currentPage === "portfolio-viewer" && portfolioData && selectedTemplate && (
+          <PortfolioViewer
+            portfolioData={portfolioData}
+            selectedTemplate={selectedTemplate}
+            onTemplateSwitch={handleTemplateSwitch}
+            onBackToGallery={handleBackToGallery}
+            onEditProfile={() => handleNavigationRequest("profile")}
+            isPreviewMode={isPreviewMode}
+            user={user}
+          />
+        )}
+
+        {currentPage === "profile" && (
+          isProfileLoading ? (
+            <RouteFallback />
+          ) : user ? (
+            <ProfilePage
+              user={user}
+              onNavigate={handleProfileNavigationRequest}
+              onUpdateProfile={handleUpdateProfile}
+              onProfileChange={handleProfileChange}
+              hasUnsavedChanges={hasUnsavedChanges}
+              changedSections={changedSections}
+            />
+          ) : profileStatus === "error" ? (
+            <div className="max-w-md mx-auto mt-24 p-6 border border-destructive/30 bg-destructive/5 rounded-lg text-center space-y-4">
+              <h2 className="font-semibold text-lg">Couldn't load your profile</h2>
+              <p className="text-sm text-muted-foreground break-words">
+                {profileError?.message ?? "Unknown error"}
+              </p>
+              <button
+                type="button"
+                onClick={() => { void reload(); }}
+                className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <RouteFallback />
+          )
+        )}
+      </Suspense>
+
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
         onClose={handleDialogClose}
         onSave={handleDialogSave}
         onDiscard={handleDialogDiscard}
         changedSections={changedSections}
-        targetDestination={pendingNavigation || ''}
+        targetDestination={pendingNavigation || ""}
       />
-      
-      {/* Global Chat Widget */}
+
       <ChatWidget />
+      <Toaster position="top-right" richColors closeButton />
     </div>
   );
 }
