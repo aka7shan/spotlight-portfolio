@@ -1,38 +1,61 @@
 /** @type {import('tailwindcss').Config} */
+// Colors are wired to CSS variables that hold RGB-channel triplets (see src/styles/globals.css).
+// Using rgb(var(--x) / <alpha-value>) lets Tailwind handle opacity modifiers like `bg-primary/10`.
+const cssVarColor = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
 module.exports = {
+  darkMode: 'class',
   content: [
+    "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.module.css",
   ],
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        card: "var(--card)",
-        "card-foreground": "var(--card-foreground)",
-        popover: "var(--popover)",
-        "popover-foreground": "var(--popover-foreground)",
-        primary: "var(--primary)",
-        "primary-foreground": "var(--primary-foreground)",
-        secondary: "var(--secondary)",
-        "secondary-foreground": "var(--secondary-foreground)",
-        muted: "var(--muted)",
-        "muted-foreground": "var(--muted-foreground)",
-        accent: "var(--accent)",
-        "accent-foreground": "var(--accent-foreground)",
-        destructive: "var(--destructive)",
-        "destructive-foreground": "var(--destructive-foreground)",
-        border: "var(--border)",
-        input: "var(--input)",
-        ring: "var(--ring)",
-        sidebar: "var(--sidebar)",
-        "sidebar-foreground": "var(--sidebar-foreground)",
-        "sidebar-primary": "var(--sidebar-primary)",
-        "sidebar-primary-foreground": "var(--sidebar-primary-foreground)",
-        "sidebar-accent": "var(--sidebar-accent)",
-        "sidebar-accent-foreground": "var(--sidebar-accent-foreground)",
-        "sidebar-border": "var(--sidebar-border)",
-        "sidebar-ring": "var(--sidebar-ring)",
+        background: cssVarColor('background'),
+        foreground: cssVarColor('foreground'),
+        card: {
+          DEFAULT: cssVarColor('card'),
+          foreground: cssVarColor('card-foreground'),
+        },
+        popover: {
+          DEFAULT: cssVarColor('popover'),
+          foreground: cssVarColor('popover-foreground'),
+        },
+        primary: {
+          DEFAULT: cssVarColor('primary'),
+          foreground: cssVarColor('primary-foreground'),
+        },
+        secondary: {
+          DEFAULT: cssVarColor('secondary'),
+          foreground: cssVarColor('secondary-foreground'),
+        },
+        muted: {
+          DEFAULT: cssVarColor('muted'),
+          foreground: cssVarColor('muted-foreground'),
+        },
+        accent: {
+          DEFAULT: cssVarColor('accent'),
+          foreground: cssVarColor('accent-foreground'),
+        },
+        destructive: {
+          DEFAULT: cssVarColor('destructive'),
+          foreground: cssVarColor('destructive-foreground'),
+        },
+        border: cssVarColor('border'),
+        input: cssVarColor('input'),
+        ring: cssVarColor('ring'),
+        sidebar: {
+          DEFAULT: cssVarColor('sidebar'),
+          foreground: cssVarColor('sidebar-foreground'),
+          primary: cssVarColor('sidebar-primary'),
+          'primary-foreground': cssVarColor('sidebar-primary-foreground'),
+          accent: cssVarColor('sidebar-accent'),
+          'accent-foreground': cssVarColor('sidebar-accent-foreground'),
+          border: cssVarColor('sidebar-border'),
+          ring: cssVarColor('sidebar-ring'),
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -42,4 +65,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};

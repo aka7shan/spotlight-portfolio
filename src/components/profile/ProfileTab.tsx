@@ -10,7 +10,7 @@
   import type { User, Project } from "../../types/portfolio";
   import { CVManager } from "./CVManager";
   import { ProjectDialog } from "./ProjectDialog";
-  import { Plus, Trash2, FileText, User as UserIcon, Code, Edit, Link, ExternalLink } from "lucide-react";
+  import { Plus, Trash2, FileText, User as UserIcon, Code, Edit, ExternalLink } from "lucide-react";
   
   interface ProfileTabProps {
     formData: User;

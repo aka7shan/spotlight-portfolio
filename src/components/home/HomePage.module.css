@@ -1,0 +1,61 @@
+/* HomePage.module.css */
+
+.primaryGradientButton {
+  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 px-8;
+}
+
+.outlineButton {
+  @apply border-2 hover:bg-primary/5 transition-all duration-300 px-8;
+}
+
+.gradientText {
+  @apply bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent font-black text-5xl md:text-6xl lg:text-7xl;
+}
+
+.badgePill {
+  @apply inline-flex items-center gap-2 bg-primary/10 dark:bg-primary/20 px-4 py-2 rounded-full mb-8 border border-primary/20;
+}
+
+.cardHover {
+  @apply border-2 hover:border-primary/20 transition-all duration-300 hover:shadow-lg;
+}
+
+.featureCard {
+  @apply p-6 h-full border-2 hover:border-primary/20 transition-all duration-300 hover:shadow-lg;
+}
+
+.testimonialCard {
+  @apply p-6 h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20;
+}
+
+.orangeGradientButton {
+  @apply bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600;
+}
+
+.greenGradientButton {
+  @apply bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600;
+}
+
+.ctaSectionBg {
+  @apply text-center bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-12 text-white relative overflow-hidden;
+}
+
+.whiteButton {
+  @apply bg-white text-purple-600 hover:bg-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 px-8;
+}
+
+.outlineWhiteButton {
+  @apply border-white/50 hover:bg-white/10 backdrop-blur-sm transition-all duration-300 px-8;
+}
+
+.statsIconCircle {
+  @apply inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 dark:bg-primary/20 mb-4 group-hover:bg-primary/20 transition-colors duration-300;
+}
+
+.profileCompletionCard {
+  @apply p-4 h-full border-2 hover:border-orange-300 transition-all duration-300 hover:shadow-lg bg-white/80 hover:bg-white;
+}
+
+.profileCompletionIcon {
+  @apply w-10 h-10 rounded-lg bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300;
+}

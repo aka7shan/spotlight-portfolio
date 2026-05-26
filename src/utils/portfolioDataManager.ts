@@ -1,17 +1,46 @@
-import type { User, PortfolioData, PortfolioDataManager } from '../types/portfolio';
-import { 
-  classicData, 
-  modernTechData, 
-  creativeData, 
-  minimalistData, 
-  corporateData 
+import type { User, PortfolioData } from '../types/portfolio';
+import {
+  classicData,
+  modernTechData,
+  creativeData,
+  minimalistData,
+  corporateData,
 } from '../constants/portfolioData';
+import { api } from '../lib/api';
 
-class PortfolioDataManagerImpl implements PortfolioDataManager {
-  private readonly STORAGE_KEY = 'portfolio_user_data';
-  private readonly EXPORT_KEY = 'portfolio_exported_data';
+/**
+ * Portfolio data manager.
+ *
+ * Phase 0 split:
+ *   - Authenticated state (user profile) lives in Postgres via the backend.
+ *     `saveUserData` and `loadUserData` now call the API. We keep them
+ *     synchronous-looking wrappers around fire-and-forget calls so existing
+ *     components don't have to change immediately — but new code should
+ *     prefer `useProfile()` which handles loading / error states properly.
+ *   - Template dummy data and "is profile complete?" remain pure functions.
+ */
 
-  // Generate portfolio data from user profile
+const TEMPLATE_DATA: Readonly<Record<string, PortfolioData>> = Object.freeze({
+  'modern-tech': modernTechData,
+  creative: creativeData,
+  minimalist: minimalistData,
+  corporate: corporateData,
+  classic: classicData,
+});
+
+const EMPTY_PORTFOLIO: PortfolioData = {
+  personalInfo: { name: '', title: '', email: '', about: '' },
+  skills: [],
+  experience: [],
+  education: [],
+  projects: [],
+  certifications: [],
+  achievements: [],
+  languages: [],
+};
+
+class PortfolioDataManagerImpl {
+  /** Pure transform: User -> PortfolioData (no I/O). */
   generateFromUser(user: User): PortfolioData {
     return {
       personalInfo: {
@@ -21,70 +50,46 @@ class PortfolioDataManagerImpl implements PortfolioDataManager {
         phone: user.phone || '',
         location: user.location || '',
         about: user.about || '',
-        avatar: user.avatar || ''
+        avatar: user.avatar || '',
+        coverImage: user.coverImage || '',
+        socialLinks: user.socialLinks,
       },
       skills: user.skills || [],
       experience: user.experience || [],
       education: user.education || [],
-      projects: user.projects || [], // Now properly using user projects
+      projects: user.projects || [],
       certifications: user.certifications || [],
       achievements: user.achievements || [],
-      languages: user.languages || []
+      languages: user.languages || [],
     };
   }
 
-  // Save user data to localStorage as JSON
-  saveUserData(user: User): void {
+  /**
+   * Save the user's profile to the backend.
+   * Returns the canonical server response so callers can replace local state.
+   */
+  async saveUserData(user: User): Promise<User> {
+    const { user: saved } = await api.me.update(user);
+    return saved;
+  }
+
+  /**
+   * Load the user's profile from the backend.
+   * Returns null if the user is not signed in or the profile doesn't exist.
+   */
+  async loadUserData(): Promise<User | null> {
     try {
-      const userData = {
-        ...user,
-        updatedAt: new Date().toISOString()
-      };
-      const jsonData = JSON.stringify(userData, null, 2);
-      localStorage.setItem(this.STORAGE_KEY, jsonData);
-      
-      // Also save as easily readable export
-      const portfolioData = this.generateFromUser(user);
-      const exportData = JSON.stringify(portfolioData, null, 2);
-      localStorage.setItem(this.EXPORT_KEY, exportData);
-      
-    } catch (error) {
-      console.error('Failed to save user data:', error);
+      const { user } = await api.me.get();
+      return user;
+    } catch {
+      return null;
     }
   }
 
-  // Load user data from localStorage
-  loadUserData(userId: string): User | null {
-    try {
-      const storedData = localStorage.getItem(this.STORAGE_KEY);
-      if (storedData) {
-        const userData = JSON.parse(storedData) as User;
-        return userData;
-      }
-    } catch (error) {
-      console.error('Failed to load user data:', error);
-    }
-    return null;
-  }
-
-  // Get dummy data for templates
   getDummyData(templateId: string): PortfolioData {
-    switch (templateId.toLowerCase()) {
-      case 'modern-tech':
-        return modernTechData;
-      case 'creative':
-        return creativeData;
-      case 'minimalist':
-        return minimalistData;
-      case 'corporate':
-        return corporateData;
-      case 'classic':
-      default:
-        return classicData;
-    }
+    return TEMPLATE_DATA[templateId.toLowerCase()] ?? classicData;
   }
 
-  // Export portfolio data as JSON string
   exportAsJSON(data: PortfolioData): string {
     try {
       return JSON.stringify(data, null, 2);
@@ -94,62 +99,28 @@ class PortfolioDataManagerImpl implements PortfolioDataManager {
     }
   }
 
-  // Import portfolio data from JSON string
   importFromJSON(json: string): PortfolioData {
     try {
       const data = JSON.parse(json) as PortfolioData;
-      // Validate the structure
-      if (!data.personalInfo || !data.personalInfo.name) {
+      if (!data?.personalInfo?.name) {
         throw new Error('Invalid portfolio data structure');
       }
       return data;
     } catch (error) {
       console.error('Failed to import data from JSON:', error);
-      // Return default empty structure
-      return {
-        personalInfo: {
-          name: '',
-          title: '',
-          email: '',
-          about: ''
-        },
-        skills: [],
-        experience: [],
-        education: [],
-        projects: [],
-        certifications: [],
-        achievements: [],
-        languages: []
-      };
+      return { ...EMPTY_PORTFOLIO };
     }
   }
 
-  // Get current exported data from localStorage
-  getCurrentExportedData(): PortfolioData | null {
-    try {
-      const exportedData = localStorage.getItem(this.EXPORT_KEY);
-      if (exportedData) {
-        return JSON.parse(exportedData) as PortfolioData;
-      }
-    } catch (error) {
-      console.error('Failed to get current exported data:', error);
-    }
-    return null;
-  }
-
-  // Check if user profile is complete
   isProfileComplete(user: User): boolean {
     return !!(
       user.name &&
       user.title &&
       user.about &&
-      user.skills && user.skills.length > 0 &&
-      user.experience && user.experience.length > 0
-      // Projects are optional for profile completion
+      user.skills?.length &&
+      user.experience?.length
     );
   }
-
 }
 
-// Export singleton instance
 export const portfolioDataManager = new PortfolioDataManagerImpl();

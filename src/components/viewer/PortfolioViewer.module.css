@@ -1,0 +1,21 @@
+/* PortfolioViewer.module.css */
+
+.topBar {
+  @apply sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-border;
+}
+
+.templateIcon {
+  @apply w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center;
+}
+
+.exitFullscreenButton {
+  @apply bg-white/90 backdrop-blur-sm;
+}
+
+.portfolioContainer {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden;
+}
+
+.previewArea {
+  @apply bg-gray-50 dark:bg-gray-900 min-h-screen pt-8;
+}

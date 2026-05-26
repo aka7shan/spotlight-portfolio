@@ -1,0 +1,49 @@
+/* PortfolioGallery.module.css */
+
+.badgePill {
+  @apply inline-flex items-center gap-2 bg-primary/10 dark:bg-primary/20 px-4 py-2 rounded-full mb-6 border border-primary/20;
+}
+
+.profileCompleteCard {
+  @apply border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20;
+}
+
+.profileIncompleteCard {
+  @apply border-2 border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20;
+}
+
+.greenGradientIcon {
+  @apply w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center;
+}
+
+.orangeGradientIcon {
+  @apply w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center;
+}
+
+.orangeGradientButton {
+  @apply bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600;
+}
+
+.greenGradientButton {
+  @apply bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600;
+}
+
+.cardHover {
+  @apply h-full border-2 hover:border-primary/20 transition-all duration-300 hover:shadow-xl overflow-hidden;
+}
+
+.categoryBadge {
+  @apply absolute top-3 left-3 bg-white/90 backdrop-blur-sm;
+}
+
+.ratingBadge {
+  @apply absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1;
+}
+
+.imageHover {
+  @apply w-full h-full object-cover group-hover:scale-105 transition-transform duration-300;
+}
+
+.signupFirstButton {
+  @apply flex-1 border-orange-200 text-orange-700 hover:bg-orange-50;
+}

@@ -4,75 +4,80 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  All color CSS variables are stored as RGB-channel triplets ("R G B") so
+  Tailwind's `<alpha-value>` placeholder + `bg-foo/10` opacity modifiers
+  work, and so callers can compose with rgb(var(--x) / 0.5) directly.
+*/
 :root {
   --font-size: 14px;
-  --background: #fafafa;
-  --foreground: #1a1a1a;
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #ffffff;
-  --input-background: #ffffff;
-  --switch-background: #e2e8f0;
+  --background: 250 250 250;
+  --foreground: 26 26 26;
+  --card: 255 255 255;
+  --card-foreground: 26 26 26;
+  --popover: 255 255 255;
+  --popover-foreground: 26 26 26;
+  --primary: 99 102 241;
+  --primary-foreground: 255 255 255;
+  --secondary: 241 245 249;
+  --secondary-foreground: 15 23 42;
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+  --accent: 241 245 249;
+  --accent-foreground: 15 23 42;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --border: 226 232 240;
+  --input: 255 255 255;
+  --input-background: 255 255 255;
+  --switch-background: 226 232 240;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #6366f1;
-  --chart-1: #f59e0b;
-  --chart-2: #10b981;
-  --chart-3: #3b82f6;
-  --chart-4: #8b5cf6;
-  --chart-5: #ef4444;
+  --ring: 99 102 241;
+  --chart-1: 245 158 11;
+  --chart-2: 16 185 129;
+  --chart-3: 59 130 246;
+  --chart-4: 139 92 246;
+  --chart-5: 239 68 68;
   --radius: 0.75rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #6366f1;
+  --sidebar: 255 255 255;
+  --sidebar-foreground: 26 26 26;
+  --sidebar-primary: 99 102 241;
+  --sidebar-primary-foreground: 255 255 255;
+  --sidebar-accent: 241 245 249;
+  --sidebar-accent-foreground: 15 23 42;
+  --sidebar-border: 226 232 240;
+  --sidebar-ring: 99 102 241;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #1a1a1a;
-  --card-foreground: #fafafa;
-  --popover: #1a1a1a;
-  --popover-foreground: #fafafa;
-  --primary: #818cf8;
-  --primary-foreground: #1e1b4b;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #1e293b;
-  --ring: #818cf8;
-  --sidebar: #1a1a1a;
-  --sidebar-foreground: #fafafa;
-  --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #1e1b4b;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #334155;
-  --sidebar-ring: #818cf8;
+  --background: 10 10 10;
+  --foreground: 250 250 250;
+  --card: 26 26 26;
+  --card-foreground: 250 250 250;
+  --popover: 26 26 26;
+  --popover-foreground: 250 250 250;
+  --primary: 129 140 248;
+  --primary-foreground: 30 27 75;
+  --secondary: 30 41 59;
+  --secondary-foreground: 248 250 252;
+  --muted: 30 41 59;
+  --muted-foreground: 148 163 184;
+  --accent: 30 41 59;
+  --accent-foreground: 248 250 252;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --border: 51 65 85;
+  --input: 30 41 59;
+  --ring: 129 140 248;
+  --sidebar: 26 26 26;
+  --sidebar-foreground: 250 250 250;
+  --sidebar-primary: 129 140 248;
+  --sidebar-primary-foreground: 30 27 75;
+  --sidebar-accent: 30 41 59;
+  --sidebar-accent-foreground: 248 250 252;
+  --sidebar-border: 51 65 85;
+  --sidebar-ring: 129 140 248;
 }
 
 @theme inline {
@@ -135,9 +140,9 @@
     position: sticky;
     top: 4rem; /* 64px - height of navigation */
     z-index: 30;
-    background: rgba(var(--background), 0.95);
+    background: rgb(var(--background) / 0.95);
     backdrop-filter: blur(8px);
-    border-bottom: 1px solid rgba(var(--border), 1);
+    border-bottom: 1px solid rgb(var(--border) / 1);
   }
 
   

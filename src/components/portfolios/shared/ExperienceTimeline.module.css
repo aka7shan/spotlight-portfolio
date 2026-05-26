@@ -1,0 +1,43 @@
+.timeline {
+  @apply relative space-y-8;
+}
+
+.timelineLine {
+  @apply absolute left-6 top-0 bottom-0 w-0.5;
+}
+
+.item {
+  @apply relative flex items-start gap-6;
+}
+
+.nodeIcon {
+  @apply w-12 h-12 rounded-full flex items-center justify-center shadow-lg relative z-10;
+}
+
+.nodeIconInner {
+  @apply w-6 h-6 text-white;
+}
+
+.cardWrapper {
+  @apply flex-1;
+}
+
+.cardBody {
+  @apply p-6;
+}
+
+.cardHeader {
+  @apply flex flex-col md:flex-row md:items-center md:justify-between mb-4;
+}
+
+.position {
+  @apply text-xl font-bold mb-1;
+}
+
+.company {
+  @apply font-medium;
+}
+
+.description {
+  @apply leading-relaxed;
+}

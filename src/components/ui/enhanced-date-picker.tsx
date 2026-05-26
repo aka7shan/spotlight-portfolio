@@ -27,7 +27,6 @@ export function EnhancedDatePicker({
   onSelect,
   disabled,
   mode = "single",
-  initialFocus,
 }: CalendarProps) {
   const getValidDate = (date?: Date) => {
     if (!date) return new Date();
