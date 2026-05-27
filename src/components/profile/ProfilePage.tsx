@@ -12,7 +12,10 @@ import { EducationTab } from "./EducationTab";
 import { CertificationsTab } from "./CertificationsTab";
 import { AchievementsTab } from "./AchievementsTab";
 import { LanguagesTab } from "./LanguagesTab";
-import { validateUserForSave } from "../../lib/validators/user";
+import {
+  validateUserForSave,
+  getProfileCompleteness,
+} from "../../lib/validators/user";
 import type { User } from "../../types/portfolio";
 import { 
   Save, 
@@ -60,48 +63,25 @@ export function ProfilePage({
     setOriginalData(user);
   }, [user]);
 
-  // Calculate profile completeness using useMemo to prevent unnecessary recalculations
-  const { profileCompleteness, missingFields } = useMemo(() => {
-    const requiredFields = [
-      { key: 'name', label: 'Name' },
-      { key: 'title', label: 'Title' },
-      { key: 'email', label: 'Email' },
-      { key: 'location', label: 'Location' },
-      { key: 'about', label: 'About' },
-      { key: 'skills', label: 'Skills', isArray: true },
-      { key: 'experience', label: 'Experience', isArray: true },
-      { key: 'education', label: 'Education', isArray: true }
-    ];
+  // Profile completeness is computed from a single source of truth so the
+  // progress bar here, the "View Templates" gate, and PortfolioGallery's
+  // "Use This Template" button can never disagree. See validators/user.ts.
+  const { percent: profileCompleteness, missingFields } = useMemo(
+    () => getProfileCompleteness(formData),
+    [formData],
+  );
 
-    const completedFields = requiredFields.filter(field => {
-      const value = formData[field.key as keyof User];
-      if (field.isArray) {
-        return Array.isArray(value) && value.length > 0;
-      }
-      return value && value !== '';
-    });
-
-    const missing = requiredFields
-      .filter(field => {
-        const value = formData[field.key as keyof User];
-        if (field.isArray) {
-          return !Array.isArray(value) || value.length === 0;
-        }
-        return !value || value === '';
-      })
-      .map(field => field.label);
-
-    const completeness = Math.round((completedFields.length / requiredFields.length) * 100);
-
-    return { profileCompleteness: completeness, missingFields: missing };
-  }, [formData]);
-
-  // Optimized change detection using useMemo
+  // Change detection. Short-circuits on referential identity first (very
+  // common: formData and originalData share array references until something
+  // is edited), then falls back to a single JSON serialization per section.
+  //
+  // Old impl ran 7 × `JSON.stringify` on every keystroke — for users with 30+
+  // experience entries that was real CPU. The referential check makes the
+  // common "haven't touched section X yet" path near-free.
   const detectedChanges = useMemo(() => {
     const changes: string[] = [];
-    
-    // Check Personal Info changes
-    if (
+
+    const personalChanged =
       formData.name !== originalData.name ||
       formData.title !== originalData.title ||
       formData.email !== originalData.email ||
@@ -109,49 +89,29 @@ export function ProfilePage({
       formData.location !== originalData.location ||
       formData.about !== originalData.about ||
       formData.avatar !== originalData.avatar ||
-      formData.coverImage !== originalData.coverImage
-    ) {
-      changes.push('Personal Information');
-    }
+      formData.coverImage !== originalData.coverImage;
+    if (personalChanged) changes.push('Personal Information');
 
-    // Check Skills changes
-    if (JSON.stringify(formData.skills || []) !== JSON.stringify(originalData.skills || [])) {
-      changes.push('Skills');
-    }
-
-    // Check Projects changes
-    if (JSON.stringify(formData.projects || []) !== JSON.stringify(originalData.projects || [])) {
-      changes.push('Projects');
-    }
-
-    // Check Experience changes
-    if (JSON.stringify(formData.experience || []) !== JSON.stringify(originalData.experience || [])) {
-      changes.push('Experience');
-    }
-
-    // Check Education changes
-    if (JSON.stringify(formData.education || []) !== JSON.stringify(originalData.education || [])) {
-      changes.push('Education');
-    }
-
-    // Check Certifications changes
-    if (JSON.stringify(formData.certifications || []) !== JSON.stringify(originalData.certifications || [])) {
-      changes.push('Certifications');
-    }
-
-    // Check Achievements changes
-    if (JSON.stringify(formData.achievements || []) !== JSON.stringify(originalData.achievements || [])) {
-      changes.push('Achievements');
-    }
-
-    // Check Languages changes
-    if (JSON.stringify(formData.languages || []) !== JSON.stringify(originalData.languages || [])) {
-      changes.push('Languages');
-    }
-
-    // Check CV changes
-    if (JSON.stringify(formData.cv || {}) !== JSON.stringify(originalData.cv || {})) {
-      changes.push('CV/Resume');
+    const sections: Array<{ key: keyof User; label: string }> = [
+      { key: 'skills', label: 'Skills' },
+      { key: 'projects', label: 'Projects' },
+      { key: 'experience', label: 'Experience' },
+      { key: 'education', label: 'Education' },
+      { key: 'certifications', label: 'Certifications' },
+      { key: 'achievements', label: 'Achievements' },
+      { key: 'languages', label: 'Languages' },
+      { key: 'cv', label: 'CV/Resume' },
+    ];
+    for (const { key, label } of sections) {
+      const next = formData[key];
+      const prev = originalData[key];
+      if (next === prev) continue; // ref-equal → unchanged
+      // Different refs but possibly equal content (e.g. user typed then
+      // reverted): fall back to structural compare. Stringify is fine here
+      // because we know the values differ by reference.
+      if (JSON.stringify(next ?? null) !== JSON.stringify(prev ?? null)) {
+        changes.push(label);
+      }
     }
 
     return changes;

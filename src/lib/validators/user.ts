@@ -152,3 +152,74 @@ export function validateUserForSave(user: User): ValidationResult {
 
   return { ok: errors.length === 0, errors };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Profile completeness
+// ─────────────────────────────────────────────────────────────────────────────
+//
+//  Single source of truth for "is this profile good enough to render a
+//  portfolio template?". Used by:
+//    - PortfolioGallery to enable "Use This Template"
+//    - ProfilePage to show the completion progress bar + "View Templates"
+//    - portfolioDataManager.isProfileComplete (wrapper kept for callers)
+//
+//  Keep this list in sync with what the portfolio templates actually consume.
+//  Adding a field here will surface as a "missing" badge on every existing
+//  user who hasn't filled it in, so be deliberate.
+
+export interface CompletenessField {
+  /** Object key on User. */
+  key: keyof User;
+  /** Display label for the missing-fields UI. */
+  label: string;
+  /** Whether this field is array-valued — non-empty array counts as complete. */
+  isArray?: boolean;
+}
+
+export const COMPLETENESS_FIELDS: ReadonlyArray<CompletenessField> = [
+  { key: "name", label: "Name" },
+  { key: "title", label: "Title" },
+  { key: "about", label: "About" },
+  { key: "skills", label: "Skills", isArray: true },
+  { key: "experience", label: "Experience", isArray: true },
+];
+
+const isFieldComplete = (user: User, field: CompletenessField): boolean => {
+  const value = user[field.key];
+  if (field.isArray) return Array.isArray(value) && value.length > 0;
+  return typeof value === "string" ? value.trim().length > 0 : Boolean(value);
+};
+
+export interface ProfileCompleteness {
+  /** 0-100 inclusive. */
+  percent: number;
+  /** Labels of fields that are still missing. */
+  missingFields: string[];
+  /** True iff every field in COMPLETENESS_FIELDS is filled. */
+  isComplete: boolean;
+}
+
+export function getProfileCompleteness(user: User): ProfileCompleteness {
+  const missingFields: string[] = [];
+  let completed = 0;
+
+  for (const field of COMPLETENESS_FIELDS) {
+    if (isFieldComplete(user, field)) {
+      completed += 1;
+    } else {
+      missingFields.push(field.label);
+    }
+  }
+
+  const percent = Math.round((completed / COMPLETENESS_FIELDS.length) * 100);
+  return {
+    percent,
+    missingFields,
+    isComplete: missingFields.length === 0,
+  };
+}
+
+/** Convenience predicate kept for legacy callers. */
+export function isProfileComplete(user: User): boolean {
+  return getProfileCompleteness(user).isComplete;
+}

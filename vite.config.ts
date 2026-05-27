@@ -26,8 +26,11 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 800,
   },
   esbuild: {
-    // Strip console + debugger in production builds for a smaller, cleaner bundle.
-    drop: mode === 'production' ? ['console', 'debugger'] : [],
+    // Strip debugger statements and noisy console.log/debug/info calls in
+    // production, but keep console.error / console.warn so real runtime issues
+    // still show up in browser devtools and any wrapping error tracker.
+    drop: mode === 'production' ? ['debugger'] : [],
+    pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
   },
   optimizeDeps: {
     include: [

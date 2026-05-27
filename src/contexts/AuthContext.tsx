@@ -50,13 +50,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Subscribe to live changes (sign in, sign out, token refresh, etc.)
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       setState({
         status: session ? 'authenticated' : 'unauthenticated',
         user: session?.user ?? null,
         session,
         isConfigured: true,
       });
+
+      // After an OAuth/email-confirm redirect, Supabase consumes the
+      // `#access_token=…` fragment and fires SIGNED_IN. The hash is now stale
+      // but still in the URL bar — strip it so a reload doesn't try to
+      // re-consume an already-used token and so the URL looks clean.
+      if (
+        event === 'SIGNED_IN' &&
+        typeof window !== 'undefined' &&
+        window.location.hash.includes('access_token')
+      ) {
+        const cleanUrl = window.location.pathname + window.location.search;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
     });
 
     return () => {

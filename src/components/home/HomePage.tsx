@@ -13,6 +13,7 @@ import {
   Award,
 } from "lucide-react";
 import type { User } from "../../types/portfolio";
+import { isProfileComplete } from "../../lib/validators/user";
 import styles from "./HomePage.module.css";
 import { HeroSection } from "./HeroSection";
 import { ProfileStatusSection } from "./ProfileStatusSection";
@@ -82,9 +83,6 @@ const getMissingProfileSections = (user: User): MissingProfileSection[] => {
     }
     return missing;
   };
-
-const isProfileComplete = (user: User) =>
-  !!(user.name && user.title && user.about && user.skills?.length && user.experience?.length && user.education?.length);
 
 interface HomePageProps {
   onNavigate: (page: string) => void;

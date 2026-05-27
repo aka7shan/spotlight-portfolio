@@ -1,31 +1,49 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useBlocker,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { Toaster, toast } from "sonner";
 import { Navigation } from "./components/layout/Navigation";
 import { HomePage } from "./components/home/HomePage";
 import { ChatWidget } from "./components/common/ChatWidget";
 import { UnsavedChangesDialog } from "./components/common/UnsavedChangesDialog";
 import { SetupRequired } from "./components/common/SetupRequired";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import type { User, PortfolioData } from "./types/portfolio";
 import { portfolioDataManager } from "./utils/portfolioDataManager";
 import { useAuth } from "./hooks/useAuth";
 import { useProfile } from "./hooks/useProfile";
+import {
+  ROUTES,
+  pageIdToPath,
+  pathToPageId,
+  portfolioViewerPath,
+  type PageId,
+} from "./lib/routes";
 
 // Routes that aren't visited on first paint are code-split into separate chunks
 // so the home page can render with the smallest possible JS payload.
 const LoginPage = lazy(() =>
-  import("./components/login/LoginPage").then(m => ({ default: m.LoginPage })),
+  import("./components/login/LoginPage").then((m) => ({ default: m.LoginPage })),
 );
 const SignupPage = lazy(() =>
-  import("./components/signup/SignupPage").then(m => ({ default: m.SignupPage })),
+  import("./components/signup/SignupPage").then((m) => ({ default: m.SignupPage })),
 );
 const PortfolioGallery = lazy(() =>
-  import("./components/gallery/PortfolioGallery").then(m => ({ default: m.PortfolioGallery })),
+  import("./components/gallery/PortfolioGallery").then((m) => ({ default: m.PortfolioGallery })),
 );
 const ProfilePage = lazy(() =>
-  import("./components/profile/ProfilePage").then(m => ({ default: m.ProfilePage })),
+  import("./components/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })),
 );
 const PortfolioViewer = lazy(() =>
-  import("./components/viewer/PortfolioViewer").then(m => ({ default: m.PortfolioViewer })),
+  import("./components/viewer/PortfolioViewer").then((m) => ({ default: m.PortfolioViewer })),
 );
 
 const RouteFallback = () => (
@@ -34,9 +52,26 @@ const RouteFallback = () => (
   </div>
 );
 
+// Valid pageIds that can be passed through the legacy `onNavigate(pageId)` API.
+const VALID_PAGE_IDS: ReadonlySet<PageId> = new Set([
+  'home',
+  'login',
+  'signup',
+  'profile',
+  'portfolios',
+  'portfolio-viewer',
+]);
+
 export default function App() {
   const { status: authStatus, user: authUser, isConfigured, signOut } = useAuth();
   const { user, status: profileStatus, error: profileError, reload, save } = useProfile();
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Derive the "active page id" from the URL so all the child components
+  // that already expect a pageId-shaped callback keep working unchanged.
+  const currentPage = useMemo(() => pathToPageId(location.pathname), [location.pathname]);
 
   // What the Navigation should show. If we're authenticated but the profile
   // call hasn't returned yet (or failed), still show "signed-in" UI using the
@@ -56,120 +91,133 @@ export default function App() {
       : null
   );
 
-  const [currentPage, setCurrentPage] = useState<string>("home");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [changedSections, setChangedSections] = useState<string[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
-  // Auth-driven routing. Two concerns:
-  //   - Authed users should never sit on login / signup pages (they'd be stuck
-  //     because those pages have no "you're already in" UI).
-  //   - When the auth listener fires "signed out" we wipe transient UI state
-  //     so a re-login doesn't inherit somebody else's selected template.
+  // Bridge: child components still call `onNavigate('signup')` with the legacy
+  // pageId. Translate to a real URL + navigate. Unknown ids are routed to home
+  // so a typo / dead string can't blank the page. Strings ending in " Tab" are
+  // ProfilePage's internal subnav and should never leave /profile.
+  const handleNavigate = useCallback(
+    (page: string) => {
+      if (page.endsWith(' Tab')) return;
+      if (!VALID_PAGE_IDS.has(page as PageId)) {
+        navigate(ROUTES.home);
+        return;
+      }
+      navigate(pageIdToPath(page as PageId));
+    },
+    [navigate],
+  );
+
+  // Page-level navigation requests. The unsaved-changes dance is now driven by
+  // react-router's <useBlocker>; this stays as an alias for compatibility with
+  // child components that already accept it.
+  const handleNavigationRequest = useCallback(
+    (page: string) => {
+      handleNavigate(page);
+    },
+    [handleNavigate],
+  );
+
+  // Profile-page subnav requests. Tab switches (strings ending in " Tab") are
+  // handled internally by ProfilePage — we just don't navigate away.
+  const handleProfileNavigationRequest = useCallback(
+    (destination: string) => {
+      if (destination.endsWith(' Tab')) return;
+      handleNavigate(destination);
+    },
+    [handleNavigate],
+  );
+
+  // -------------------------------------------------------------------------
+  // Auth-driven routing
+  // -------------------------------------------------------------------------
+  // Two concerns:
+  //   - Authed users who land on login/signup get bounced to /profile (those
+  //     pages have no "you're already signed in" UI).
+  //   - When we transition to "signed out" we wipe transient form state so a
+  //     re-login doesn't inherit somebody else's unsaved-changes flag.
   const prevAuthRef = useRef(authStatus);
   useEffect(() => {
     const prev = prevAuthRef.current;
     prevAuthRef.current = authStatus;
 
-    if (authStatus === "authenticated") {
-      // Redirect away from auth pages whenever we're authed, even if there's no
-      // status *transition* (e.g. user already had a session and just hit /login).
-      setCurrentPage((page) =>
-        page === "login" || page === "signup" || page === "home" ? "profile" : page,
-      );
+    if (authStatus === "authenticated" && prev !== "authenticated") {
+      // Just signed in. Honor `?next=` if present so we resume where they were
+      // forced to log in from; otherwise default to /profile from the auth
+      // pages, and leave the home page alone (signed-in users still get a
+      // useful "complete your profile" pitch there).
+      const params = new URLSearchParams(location.search);
+      const next = params.get('next');
+      const isAuthScreen =
+        location.pathname === ROUTES.login || location.pathname === ROUTES.signup;
+      if (next) {
+        navigate(next, { replace: true });
+      } else if (isAuthScreen) {
+        navigate(ROUTES.profile, { replace: true });
+      }
     }
+
     if (prev === "authenticated" && authStatus === "unauthenticated") {
-      setCurrentPage("home");
       setHasUnsavedChanges(false);
       setChangedSections([]);
-      setSelectedTemplate(null);
-      setPortfolioData(null);
-      setIsPreviewMode(false);
+      navigate(ROUTES.home, { replace: true });
     }
-  }, [authStatus]);
+  // location is intentionally not in deps — this effect should only fire on
+  // auth transitions, not on every URL change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus, navigate]);
 
-  const handleNavigate = useCallback((page: string) => {
-    setCurrentPage(page);
-  }, []);
-
-  const handleNavigationRequest = useCallback(
-    (page: string) => {
-      if (currentPage === "profile" && hasUnsavedChanges) {
-        setPendingNavigation(page);
-        setShowUnsavedDialog(true);
-      } else {
-        handleNavigate(page);
-      }
-    },
-    [currentPage, hasUnsavedChanges, handleNavigate],
+  // -------------------------------------------------------------------------
+  // Unsaved-changes guard for /profile
+  // -------------------------------------------------------------------------
+  // react-router's useBlocker intercepts both in-app navigations AND browser
+  // back/forward when `shouldBlock` is true. We surface the dialog and let
+  // the user choose: Save (close dialog, user manually clicks Save in
+  // ProfilePage), Discard (drop changes + proceed), Cancel (stay).
+  const isOnProfilePage = currentPage === 'profile';
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges &&
+      isOnProfilePage &&
+      currentLocation.pathname !== nextLocation.pathname,
   );
 
-  const handleDialogSave = useCallback(() => {
-    // Actual save lives in ProfilePage; here we just close and continue.
-    setShowUnsavedDialog(false);
-    if (pendingNavigation) {
-      handleNavigate(pendingNavigation);
-      setPendingNavigation(null);
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      setPendingNavigation(blocker.location.pathname);
+      setShowUnsavedDialog(true);
     }
-  }, [pendingNavigation, handleNavigate]);
+  }, [blocker]);
+
+  // "Save & Continue": closes the dialog and cancels the navigation so the
+  // user can press the in-page Save button. We deliberately don't navigate
+  // away here — the original implementation did, but it lost the user's
+  // changes silently. Surfacing this as "you need to save first" is safer.
+  const handleDialogSave = useCallback(() => {
+    setShowUnsavedDialog(false);
+    if (blocker.state === 'blocked') blocker.reset();
+    setPendingNavigation(null);
+  }, [blocker]);
 
   const handleDialogDiscard = useCallback(() => {
     setHasUnsavedChanges(false);
     setChangedSections([]);
     setShowUnsavedDialog(false);
-    if (pendingNavigation) {
-      handleNavigate(pendingNavigation);
-      setPendingNavigation(null);
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
     }
-  }, [pendingNavigation, handleNavigate]);
+    setPendingNavigation(null);
+  }, [blocker]);
 
   const handleDialogClose = useCallback(() => {
     setShowUnsavedDialog(false);
+    if (blocker.state === 'blocked') blocker.reset();
     setPendingNavigation(null);
-  }, []);
-
-  const handleTemplateSelect = useCallback(
-    (templateId: string) => {
-      if (user && portfolioDataManager.isProfileComplete(user)) {
-        setPortfolioData(portfolioDataManager.generateFromUser(user));
-        setSelectedTemplate(templateId);
-        setIsPreviewMode(false);
-        setCurrentPage("portfolio-viewer");
-      }
-    },
-    [user],
-  );
-
-  const handleTemplatePreview = useCallback((templateId: string) => {
-    setPortfolioData(portfolioDataManager.getDummyData(templateId));
-    setSelectedTemplate(templateId);
-    setIsPreviewMode(true);
-    setCurrentPage("portfolio-viewer");
-  }, []);
-
-  const handleTemplateSwitch = useCallback(
-    (templateId: string) => {
-      setSelectedTemplate(templateId);
-      if (isPreviewMode) {
-        setPortfolioData(portfolioDataManager.getDummyData(templateId));
-      } else if (user) {
-        setPortfolioData(portfolioDataManager.generateFromUser(user));
-      }
-    },
-    [isPreviewMode, user],
-  );
-
-  const handleBackToGallery = useCallback(() => {
-    setCurrentPage("portfolios");
-    setSelectedTemplate(null);
-    setPortfolioData(null);
-    setIsPreviewMode(false);
-  }, []);
+  }, [blocker]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -183,41 +231,22 @@ export default function App() {
   const handleUpdateProfile = useCallback(
     async (updatedUser: User) => {
       try {
-        const saved = await save(updatedUser);
+        await save(updatedUser);
         setHasUnsavedChanges(false);
         setChangedSections([]);
-        if (
-          currentPage === "portfolio-viewer" &&
-          !isPreviewMode &&
-          portfolioDataManager.isProfileComplete(saved)
-        ) {
-          setPortfolioData(portfolioDataManager.generateFromUser(saved));
-        }
         toast.success("Profile saved");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to save profile";
         toast.error(message);
       }
     },
-    [currentPage, isPreviewMode, save],
+    [save],
   );
 
   const handleProfileChange = useCallback((sections: string[]) => {
     setHasUnsavedChanges(sections.length > 0);
     setChangedSections(sections);
   }, []);
-
-  const handleProfileNavigationRequest = useCallback(
-    (destination: string) => {
-      if (hasUnsavedChanges) {
-        setPendingNavigation(destination);
-        setShowUnsavedDialog(true);
-      } else if (!destination.includes("Tab")) {
-        handleNavigate(destination);
-      }
-    },
-    [hasUnsavedChanges, handleNavigate],
-  );
 
   useEffect(() => {
     if (!hasUnsavedChanges) return;
@@ -229,12 +258,17 @@ export default function App() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // ---------------------------------------------------------------------------
+  // The dialog's `getDestinationLabel` expects pageId-style strings ("home",
+  // "portfolios", …). Convert the blocker's path back so the message still
+  // reads as "you have unsaved changes that will be lost if you continue to
+  // Home Page" rather than "/home".
+  const dialogDestination = pendingNavigation ? pathToPageId(pendingNavigation) : '';
+
+  // -------------------------------------------------------------------------
   // Early returns: setup screen + initial auth bootstrap
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
 
   if (!isConfigured) return <SetupRequired />;
-
   if (authStatus === "loading") return <RouteFallback />;
 
   const isAuthed = authStatus === "authenticated";
@@ -250,66 +284,103 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <Suspense fallback={<RouteFallback />}>
-        {currentPage === "home" && <HomePage onNavigate={handleNavigationRequest} user={user} />}
-
-        {currentPage === "login" && <LoginPage onNavigate={handleNavigationRequest} />}
-
-        {currentPage === "signup" && <SignupPage onNavigate={handleNavigationRequest} />}
-
-        {currentPage === "portfolios" && (
-          <PortfolioGallery
-            onNavigate={handleNavigationRequest}
-            user={user}
-            onTemplateSelect={handleTemplateSelect}
-            onTemplatePreview={handleTemplatePreview}
-            isProfileComplete={user ? portfolioDataManager.isProfileComplete(user) : false}
-          />
-        )}
-
-        {currentPage === "portfolio-viewer" && portfolioData && selectedTemplate && (
-          <PortfolioViewer
-            portfolioData={portfolioData}
-            selectedTemplate={selectedTemplate}
-            onTemplateSwitch={handleTemplateSwitch}
-            onBackToGallery={handleBackToGallery}
-            onEditProfile={() => handleNavigationRequest("profile")}
-            isPreviewMode={isPreviewMode}
-            user={user}
-          />
-        )}
-
-        {currentPage === "profile" && (
-          isProfileLoading ? (
-            <RouteFallback />
-          ) : user ? (
-            <ProfilePage
-              user={user}
-              onNavigate={handleProfileNavigationRequest}
-              onUpdateProfile={handleUpdateProfile}
-              onProfileChange={handleProfileChange}
-              hasUnsavedChanges={hasUnsavedChanges}
-              changedSections={changedSections}
+      <ErrorBoundary key={location.pathname}>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route
+              path={ROUTES.home}
+              element={<HomePage onNavigate={handleNavigationRequest} user={user} />}
             />
-          ) : profileStatus === "error" ? (
-            <div className="max-w-md mx-auto mt-24 p-6 border border-destructive/30 bg-destructive/5 rounded-lg text-center space-y-4">
-              <h2 className="font-semibold text-lg">Couldn't load your profile</h2>
-              <p className="text-sm text-muted-foreground break-words">
-                {profileError?.message ?? "Unknown error"}
-              </p>
-              <button
-                type="button"
-                onClick={() => { void reload(); }}
-                className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <RouteFallback />
-          )
-        )}
-      </Suspense>
+
+            <Route
+              path={ROUTES.login}
+              element={<LoginPage onNavigate={handleNavigationRequest} />}
+            />
+
+            <Route
+              path={ROUTES.signup}
+              element={<SignupPage onNavigate={handleNavigationRequest} />}
+            />
+
+            <Route
+              path={ROUTES.portfolios}
+              element={
+                <PortfolioGallery
+                  onNavigate={handleNavigationRequest}
+                  user={user}
+                  onTemplateSelect={(id) => navigate(portfolioViewerPath(id, 'use'))}
+                  onTemplatePreview={(id) => navigate(portfolioViewerPath(id, 'preview'))}
+                  isProfileComplete={user ? portfolioDataManager.isProfileComplete(user) : false}
+                />
+              }
+            />
+
+            {/* Preview a template with dummy data — public. */}
+            <Route
+              path="/portfolios/:templateId"
+              element={
+                <PortfolioViewerRoute
+                  mode="preview"
+                  user={user}
+                  onEditProfile={() => navigate(ROUTES.profile)}
+                />
+              }
+            />
+
+            {/* Render the current user's data with this template — auth-gated. */}
+            <Route
+              path="/portfolios/:templateId/use"
+              element={
+                <RequireAuth isAuthed={isAuthed}>
+                  <PortfolioViewerRoute
+                    mode="use"
+                    user={user}
+                    onEditProfile={() => navigate(ROUTES.profile)}
+                  />
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path={ROUTES.profile}
+              element={
+                <RequireAuth isAuthed={isAuthed}>
+                  {isProfileLoading ? (
+                    <RouteFallback />
+                  ) : user ? (
+                    <ProfilePage
+                      user={user}
+                      onNavigate={handleProfileNavigationRequest}
+                      onUpdateProfile={handleUpdateProfile}
+                      onProfileChange={handleProfileChange}
+                      hasUnsavedChanges={hasUnsavedChanges}
+                      changedSections={changedSections}
+                    />
+                  ) : profileStatus === "error" ? (
+                    <div className="max-w-md mx-auto mt-24 p-6 border border-destructive/30 bg-destructive/5 rounded-lg text-center space-y-4">
+                      <h2 className="font-semibold text-lg">Couldn't load your profile</h2>
+                      <p className="text-sm text-muted-foreground break-words">
+                        {profileError?.message ?? "Unknown error"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { void reload(); }}
+                        className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <RouteFallback />
+                  )}
+                </RequireAuth>
+              }
+            />
+
+            <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
 
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
@@ -317,11 +388,80 @@ export default function App() {
         onSave={handleDialogSave}
         onDiscard={handleDialogDiscard}
         changedSections={changedSections}
-        targetDestination={pendingNavigation || ""}
+        targetDestination={dialogDestination}
       />
 
-      <ChatWidget />
+      {/* ChatWidget is purely a logged-in-user feature; hide on auth screens. */}
+      {currentPage !== "login" && currentPage !== "signup" && <ChatWidget />}
       <Toaster position="top-right" richColors closeButton />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Route helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Gate for auth-only routes. If the user isn't signed in we send them to
+ * /login with `?next=` set to the URL they were trying to reach, so the
+ * post-login redirect (see App's auth-driven effect) can bounce them back.
+ */
+function RequireAuth({
+  isAuthed,
+  children,
+}: {
+  isAuthed: boolean;
+  children: ReactNode;
+}) {
+  const location = useLocation();
+  if (!isAuthed) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${ROUTES.login}?next=${next}`} replace />;
+  }
+  return <>{children}</>;
+}
+
+/**
+ * URL-driven portfolio viewer:
+ *   /portfolios/:templateId        → preview with dummy data (mode="preview")
+ *   /portfolios/:templateId/use    → render the live user (mode="use")
+ *
+ * In "use" mode without a complete profile we silently fall back to preview
+ * data — the alternative would be a 404-style "fill out your profile" panel,
+ * but the existing ViewerToolbar already explains what to do.
+ */
+function PortfolioViewerRoute({
+  mode,
+  user,
+  onEditProfile,
+}: {
+  mode: 'preview' | 'use';
+  user: User | null;
+  onEditProfile: () => void;
+}) {
+  const { templateId } = useParams<{ templateId: string }>();
+  const navigate = useNavigate();
+  const safeTemplateId = templateId ?? 'classic';
+
+  const canRenderLive =
+    mode === 'use' && user != null && portfolioDataManager.isProfileComplete(user);
+
+  const portfolioData: PortfolioData = useMemo(() => {
+    return canRenderLive
+      ? portfolioDataManager.generateFromUser(user as User)
+      : portfolioDataManager.getDummyData(safeTemplateId);
+  }, [canRenderLive, user, safeTemplateId]);
+
+  return (
+    <PortfolioViewer
+      portfolioData={portfolioData}
+      selectedTemplate={safeTemplateId}
+      onTemplateSwitch={(id) => navigate(portfolioViewerPath(id, mode), { replace: true })}
+      onBackToGallery={() => navigate(ROUTES.portfolios)}
+      onEditProfile={onEditProfile}
+      isPreviewMode={!canRenderLive}
+      user={user}
+    />
   );
 }

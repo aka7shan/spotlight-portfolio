@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from './useAuth';
 import type { User } from '../types/portfolio';
@@ -29,14 +28,12 @@ export function useProfile() {
       const { user } = await api.me.get();
       setState({ status: 'ready', user, error: null });
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
+      const error: ApiError | Error = err instanceof Error ? err : new Error(String(err));
       setState((prev) => ({ status: 'error', user: prev.user, error }));
-      // Surface the error to the user — silent failure is the worst kind.
-      const message =
-        error instanceof ApiError
-          ? `Could not load your profile (${error.status}): ${error.message}`
-          : `Could not load your profile: ${error.message}`;
-      toast.error(message, { duration: 8000 });
+      // We deliberately do NOT toast here: App.tsx already renders an inline
+      // error panel with a retry button when `profileStatus === 'error'`.
+      // Surfacing the same failure twice (toast + panel) was just noise.
+      console.error('[useProfile] load failed', error);
     }
   }, [authStatus]);
 
