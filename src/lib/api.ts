@@ -9,15 +9,22 @@ import type { User } from '../types/portfolio';
  *  - prepends config.apiUrl
  *  - attaches the Supabase access token (if signed in)
  *  - times out after REQUEST_TIMEOUT_MS so a hung backend doesn't stall the UI
- *  - retries once on transient 5xx / network errors with jittered backoff
  *  - parses JSON
  *  - turns non-2xx into a thrown ApiError
  *
- * For Phase 0 we expose just enough endpoints to wire the frontend off
- * localStorage. More endpoints will come in later phases.
+ * Retries
+ * -------
+ *  Retry behavior is opt-in per call. The default (retry: false) is best for
+ *  interactive paths like `/v1/me` where a doubled wait on a cold start is
+ *  worse for UX than just surfacing the error and letting React's error UI
+ *  expose a "Retry" button (which the user controls). For idempotent
+ *  background calls you can pass `retry: true` to get one retry on
+ *  502/503/504 + network errors with jittered backoff.
  */
 
-const REQUEST_TIMEOUT_MS = 10_000;
+// 8s gives Vercel's Node function plenty of room for a real cold start
+// (typically 1-3s) without making a hung backend feel hopeless.
+const REQUEST_TIMEOUT_MS = 8_000;
 const RETRY_BASE_MS = 250;
 
 export class ApiError extends Error {
@@ -39,6 +46,11 @@ interface RequestOptions {
   signal?: AbortSignal;
   /** Skip auth header even if a token exists (used for unauthenticated calls). */
   anonymous?: boolean;
+  /**
+   * Retry once on transient failures (5xx / network errors). Off by default
+   * to keep interactive paths snappy. Turn on for background sync etc.
+   */
+  retry?: boolean;
 }
 
 /**
@@ -73,7 +85,8 @@ const isOffline = (): boolean =>
   typeof navigator !== 'undefined' && navigator.onLine === false;
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, signal, anonymous = false } = options;
+  const { method = 'GET', body, signal, anonymous = false, retry = false } = options;
+  const maxAttempts = retry ? 2 : 1;
 
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -92,8 +105,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const url = `${config.apiUrl}${path}`;
 
   let lastError: unknown = null;
-  // Two attempts total: original + one retry on transient failures.
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const isFinalAttempt = attempt === maxAttempts - 1;
     const { controller, cancel } = withTimeout(signal);
 
     let res: Response;
@@ -113,7 +126,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       }
       const isTimeout =
         cause instanceof DOMException && cause.name === 'TimeoutError';
-      if (attempt === 0 && !isOffline()) {
+      if (!isFinalAttempt && !isOffline()) {
         await sleep(RETRY_BASE_MS + Math.random() * RETRY_BASE_MS);
         continue;
       }
@@ -129,8 +142,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
     cancel();
 
-    // Retry transient server errors once.
-    if (isRetriableStatus(res.status) && attempt === 0) {
+    // Retry transient server errors only when the caller opted in.
+    if (isRetriableStatus(res.status) && !isFinalAttempt) {
       lastError = res;
       await sleep(RETRY_BASE_MS + Math.random() * RETRY_BASE_MS);
       continue;

@@ -30,20 +30,24 @@ import {
 
 // Routes that aren't visited on first paint are code-split into separate chunks
 // so the home page can render with the smallest possible JS payload.
-const LoginPage = lazy(() =>
-  import("./components/login/LoginPage").then((m) => ({ default: m.LoginPage })),
-);
-const SignupPage = lazy(() =>
-  import("./components/signup/SignupPage").then((m) => ({ default: m.SignupPage })),
-);
+//
+// The dynamic-import factories are pulled out into named consts (instead of
+// being inlined into `lazy(...)`) so we can call them eagerly for prefetch —
+// see the auth-driven effect below.
+const importLoginPage = () => import("./components/login/LoginPage");
+const importSignupPage = () => import("./components/signup/SignupPage");
+const importPortfolioGallery = () => import("./components/gallery/PortfolioGallery");
+const importProfilePage = () => import("./components/profile/ProfilePage");
+const importPortfolioViewer = () => import("./components/viewer/PortfolioViewer");
+
+const LoginPage = lazy(() => importLoginPage().then((m) => ({ default: m.LoginPage })));
+const SignupPage = lazy(() => importSignupPage().then((m) => ({ default: m.SignupPage })));
 const PortfolioGallery = lazy(() =>
-  import("./components/gallery/PortfolioGallery").then((m) => ({ default: m.PortfolioGallery })),
+  importPortfolioGallery().then((m) => ({ default: m.PortfolioGallery })),
 );
-const ProfilePage = lazy(() =>
-  import("./components/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })),
-);
+const ProfilePage = lazy(() => importProfilePage().then((m) => ({ default: m.ProfilePage })));
 const PortfolioViewer = lazy(() =>
-  import("./components/viewer/PortfolioViewer").then((m) => ({ default: m.PortfolioViewer })),
+  importPortfolioViewer().then((m) => ({ default: m.PortfolioViewer })),
 );
 
 const RouteFallback = () => (
@@ -159,6 +163,16 @@ export default function App() {
       } else if (isAuthScreen) {
         navigate(ROUTES.profile, { replace: true });
       }
+
+      // Authenticated users will almost certainly hit /profile and /portfolios
+      // next. Kick off chunk downloads in the background NOW so they're in
+      // the cache by the time the user navigates. The promises are
+      // intentionally floated — failures are caught and ignored because
+      // these are speculative prefetches; the real <Suspense> boundary
+      // around <Routes> will retry the import if the user actually navigates.
+      void importProfilePage().catch(() => undefined);
+      void importPortfolioGallery().catch(() => undefined);
+      void importPortfolioViewer().catch(() => undefined);
     }
 
     if (prev === "authenticated" && authStatus === "unauthenticated") {
