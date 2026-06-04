@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Camera, ImagePlus, Trash2 } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
+import type { User } from "../../types/portfolio";
 
 /**
  * Landscape cover image uploader for the profile header.
@@ -18,23 +19,22 @@ import { api, ApiError } from "../../lib/api";
  *   1. Validate MIME + size client-side (cheap rejection).
  *   2. Optimistic `blob:` preview for instant feedback.
  *   3. POST /v1/me/cover (multipart) — backend writes to Storage AND DB.
- *   4. On success the parent receives the persisted URL via `onCoverChange`.
+ *   4. On success the parent receives the FULL assembled user via
+ *      `onCoverPersisted` so it can sync both its local form state and
+ *      the shared useProfile cache (navbar, gallery, etc.) at once.
  *   5. On failure the optimistic preview is rolled back.
  */
 
 interface CoverUploadProps {
   currentCover?: string;
   /**
-   * Called after a successful upload with the new persisted cover URL.
-   * The cover is already saved server-side — the parent uses this to
-   * refresh its local user state, not to trigger another save.
+   * Called after a successful upload OR successful delete with the FULL
+   * assembled user payload. See AvatarUpload for the symmetric design
+   * rationale — short version: passing the user (not just the URL) lets
+   * the parent surgically update form state AND refresh the global
+   * useProfile cache in one shot.
    */
-  onCoverChange: (cover: string) => void;
-  /**
-   * Called after a successful delete. The cover field has already been
-   * cleared in the database.
-   */
-  onCoverRemove: () => void;
+  onCoverPersisted: (user: User) => void;
   className?: string;
 }
 
@@ -45,8 +45,7 @@ const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif
 
 export function CoverUpload({
   currentCover,
-  onCoverChange,
-  onCoverRemove,
+  onCoverPersisted,
   className = "",
 }: CoverUploadProps) {
   const [isWorking, setIsWorking] = useState(false);
@@ -93,8 +92,11 @@ export function CoverUpload({
       setIsWorking(true);
 
       try {
-        const { coverUrl } = await api.me.uploadCover(file);
-        onCoverChange(coverUrl);
+        // Forward the full assembled user; the parent will surgically
+        // sync formData.coverImage + originalData.coverImage AND swap
+        // the useProfile cache. See AvatarUpload for the same pattern.
+        const { user } = await api.me.uploadCover(file);
+        onCoverPersisted(user);
         URL.revokeObjectURL(localUrl);
         setPreviewUrl(null);
         toast.success("Cover updated");
@@ -112,7 +114,7 @@ export function CoverUpload({
         setIsWorking(false);
       }
     },
-    [onCoverChange],
+    [onCoverPersisted],
   );
 
   const handleUploadClick = useCallback(() => {
@@ -124,8 +126,8 @@ export function CoverUpload({
     if (isWorking) return;
     setIsWorking(true);
     try {
-      await api.me.removeCover();
-      onCoverRemove();
+      const { user } = await api.me.removeCover();
+      onCoverPersisted(user);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       toast.success("Cover removed");
@@ -140,7 +142,7 @@ export function CoverUpload({
     } finally {
       setIsWorking(false);
     }
-  }, [isWorking, onCoverRemove, previewUrl]);
+  }, [isWorking, onCoverPersisted, previewUrl]);
 
   const displayCover = previewUrl || currentCover;
 

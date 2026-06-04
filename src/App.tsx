@@ -74,7 +74,7 @@ const VALID_PAGE_IDS: ReadonlySet<PageId> = new Set([
 
 export default function App() {
   const { status: authStatus, user: authUser, isConfigured, signOut } = useAuth();
-  const { user, status: profileStatus, error: profileError, reload, save } = useProfile();
+  const { user, status: profileStatus, error: profileError, reload, save, applyPersisted } = useProfile();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -269,6 +269,25 @@ export default function App() {
   }, []);
 
   /**
+   * Bridge for child components that persist a user-shaped payload through
+   * a dedicated endpoint (POST /v1/me/avatar, POST /v1/me/cover, …) and
+   * need the global useProfile cache to reflect the new value immediately
+   * — without a follow-up GET /v1/me.
+   *
+   * Today this is wired from ProfilePage > ProfileHeader > AvatarUpload /
+   * CoverUpload. The handler just hands the assembled user the backend
+   * returned straight into useProfile.applyPersisted, which atomically
+   * swaps the cached user. Any consumer of `user` (navbar avatar, gallery
+   * page, etc.) sees the fresh value on its next render.
+   */
+  const handleUserPersisted = useCallback(
+    (updatedUser: User) => {
+      applyPersisted(updatedUser);
+    },
+    [applyPersisted],
+  );
+
+  /**
    * Persist a new active template choice from the gallery.
    *
    * Fire-and-forget from the card's POV: we hit PUT /v1/me/portfolio,
@@ -415,6 +434,7 @@ export default function App() {
                       onNavigate={handleProfileNavigationRequest}
                       onUpdateProfile={handleUpdateProfile}
                       onProfileChange={handleProfileChange}
+                      onUserPersisted={handleUserPersisted}
                       hasUnsavedChanges={hasUnsavedChanges}
                       changedSections={changedSections}
                     />

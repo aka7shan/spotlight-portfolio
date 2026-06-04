@@ -37,15 +37,23 @@ interface ProfilePageProps {
   onNavigate: (page: string) => void;
   onUpdateProfile: (user: User) => void;
   onProfileChange: (sections: string[]) => void;
+  /**
+   * Notified when avatar/cover (or any field persisted by a dedicated
+   * endpoint outside the PUT /v1/me path) finishes saving. The parent
+   * uses this to refresh the shared useProfile cache so consumers like
+   * the navbar see the change without a manual reload.
+   */
+  onUserPersisted: (user: User) => void;
   hasUnsavedChanges: boolean;
   changedSections: string[];
 }
 
-export function ProfilePage({ 
-  user, 
-  onNavigate, 
-  onUpdateProfile, 
-  onProfileChange, 
+export function ProfilePage({
+  user,
+  onNavigate,
+  onUpdateProfile,
+  onProfileChange,
+  onUserPersisted,
   hasUnsavedChanges,
   changedSections
 }: ProfilePageProps) {
@@ -54,15 +62,63 @@ export function ProfilePage({
   const [originalData, setOriginalData] = useState<User>(user);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  
+
   // Ref to expose save function to parent
   const saveRef = useRef<(() => void) | null>(null);
 
-  // Reset form data when user changes
+  // Tracks the user.id we last initialized form state from. Used by the
+  // sync effect below to decide between "full reset" and "no-op": when the
+  // identity is the same, the parent's `user` prop may have refreshed (e.g.
+  // a sibling component bumped the useProfile cache after an avatar
+  // upload), but our local formData might already be ahead of `user` for
+  // in-flight typing — we mustn't clobber those edits.
+  const lastSyncedUserIdRef = useRef<string | null>(null);
+
+  // Sync from parent only when the user *identity* changes — i.e. on
+  // first mount, or after logout + login as a different user. In-session
+  // refreshes of the same user (e.g. cache bump after a persisted avatar
+  // upload) are handled surgically by `handleUserPersisted` below so that
+  // unrelated in-flight form edits are preserved.
   useEffect(() => {
-    setFormData(user);
-    setOriginalData(user);
+    if (lastSyncedUserIdRef.current !== user.id) {
+      setFormData(user);
+      setOriginalData(user);
+      lastSyncedUserIdRef.current = user.id;
+    }
   }, [user]);
+
+  /**
+   * Called by ProfileHeader (which receives it from AvatarUpload /
+   * CoverUpload) after a successful upload or remove. The image has
+   * already been persisted server-side; this handler:
+   *
+   *   1. Updates `formData.{avatar,coverImage}` so the UI shows the new
+   *      URL immediately.
+   *   2. Updates `originalData.{avatar,coverImage}` to match — this is
+   *      what stops the diff check on lines ~85-93 from flagging
+   *      "Personal Information" as unsaved. The fields are clean because
+   *      they were just saved by their own endpoint.
+   *   3. Bubbles the full assembled user up to App so the shared
+   *      useProfile cache (and any consumer like the navbar) sees the
+   *      change without a full reload.
+   *
+   * Crucially we only touch avatar + coverImage on both copies — never
+   * the whole user — so any in-flight edits to other fields (name, email,
+   * about, …) survive. The full-form save flow is unaffected.
+   */
+  const handleUserPersisted = useCallback((updatedUser: User) => {
+    setFormData((prev) => ({
+      ...prev,
+      avatar: updatedUser.avatar,
+      coverImage: updatedUser.coverImage,
+    }));
+    setOriginalData((prev) => ({
+      ...prev,
+      avatar: updatedUser.avatar,
+      coverImage: updatedUser.coverImage,
+    }));
+    onUserPersisted(updatedUser);
+  }, [onUserPersisted]);
 
   // Profile completeness is computed from a single source of truth so the
   // progress bar here, the "View Templates" gate, and PortfolioGallery's
@@ -277,7 +333,7 @@ export function ProfilePage({
             <ProfileHeader
               user={formData}
               profileCompleteness={profileCompleteness}
-              onUpdateUser={handleInputChange}
+              onUserPersisted={handleUserPersisted}
               className="mb-8"
             />
 

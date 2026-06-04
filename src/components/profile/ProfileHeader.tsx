@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import { Badge } from "../ui/badge";
 import { MapPin, Mail, Phone } from "lucide-react";
 import type { User } from "../../types/portfolio";
@@ -8,35 +7,25 @@ import { CoverUpload } from "./CoverUpload";
 interface ProfileHeaderProps {
   user: User;
   profileCompleteness: number;
-  onUpdateUser: (field: keyof User, value: any) => void;
+  /**
+   * Notified when avatar OR cover is persisted server-side. Both children
+   * forward the full assembled user payload they received from the
+   * backend, so the parent can sync its own state without a follow-up
+   * GET /v1/me. See AvatarUpload + CoverUpload for the contract.
+   */
+  onUserPersisted: (user: User) => void;
   className?: string;
 }
 
 export function ProfileHeader({
   user,
   profileCompleteness,
-  onUpdateUser,
+  onUserPersisted,
   className = ""
 }: ProfileHeaderProps) {
-  // Avatar + cover now upload directly to Supabase Storage via the dedicated
-  // endpoints. The callbacks below just propagate the persisted URL into the
-  // parent's local user state — no FileReader/data-URL roundtrip, no
-  // "Save Changes" required after picking an image.
-  const handleAvatarChange = useCallback((avatar: string) => {
-    onUpdateUser('avatar', avatar);
-  }, [onUpdateUser]);
-
-  const handleAvatarRemove = useCallback(() => {
-    onUpdateUser('avatar', undefined);
-  }, [onUpdateUser]);
-
-  const handleCoverChange = useCallback((cover: string) => {
-    onUpdateUser('coverImage', cover);
-  }, [onUpdateUser]);
-
-  const handleCoverRemove = useCallback(() => {
-    onUpdateUser('coverImage', undefined);
-  }, [onUpdateUser]);
+  // ProfileHeader is intentionally dumb about the avatar/cover flow now —
+  // both children call the backend themselves and surface the full updated
+  // user via `onUserPersisted`. We just thread the callback through.
 
   const getCompletenessColor = (percentage: number) => {
     if (percentage >= 80) return 'bg-green-500';
@@ -56,8 +45,7 @@ export function ProfileHeader({
       {/* Cover Image Section — uploads directly to Supabase Storage. */}
       <CoverUpload
         currentCover={user.coverImage}
-        onCoverChange={handleCoverChange}
-        onCoverRemove={handleCoverRemove}
+        onCoverPersisted={onUserPersisted}
       />
 
       {/* Profile Info Section */}
@@ -67,8 +55,7 @@ export function ProfileHeader({
           <AvatarUpload
             currentAvatar={user.avatar}
             userName={user.name}
-            onAvatarChange={handleAvatarChange}
-            onAvatarRemove={handleAvatarRemove}
+            onAvatarPersisted={onUserPersisted}
           />
         </div>
 

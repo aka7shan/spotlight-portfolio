@@ -54,9 +54,25 @@ export function useProfile() {
     }
   }, []);
 
+  /**
+   * Adopt a freshly-persisted user from somewhere other than `save()` —
+   * e.g. the response of POST /v1/me/avatar or POST /v1/me/cover, which
+   * write to dedicated endpoints but return the full assembled user.
+   *
+   * This is intentionally distinct from `save()`: it never flips the
+   * loading flag, never throws, and assumes the caller has already
+   * confirmed the network round-trip succeeded. Use it whenever a child
+   * has just received a fresh `user` payload that the rest of the app
+   * (navbar, gallery, etc.) should now see.
+   */
+  const applyPersisted = useCallback((user: User) => {
+    setState({ status: 'ready', user, error: null });
+  }, []);
+
   return {
     ...state,
     reload: load,
     save,
+    applyPersisted,
   };
 }

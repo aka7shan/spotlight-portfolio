@@ -4,21 +4,26 @@ import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Camera, Trash2, ImagePlus } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
+import type { User } from "../../types/portfolio";
 
 interface AvatarUploadProps {
   currentAvatar?: string;
   userName?: string;
   /**
-   * Called after a successful upload with the new persisted avatar URL.
-   * The avatar is already saved in the database by this point — the parent
-   * uses this to refresh its local user state, not to trigger another save.
+   * Called after a successful upload OR successful delete with the FULL
+   * assembled user payload returned by the backend. The avatar is already
+   * persisted by this point — the parent uses this to:
+   *   1. Update its local user-shaped state (formData / originalData on the
+   *      profile page) so the dirty-flag check stays clean.
+   *   2. Refresh the shared user cache (useProfile) so other screens
+   *      reading `user.avatar` (navbar, gallery) see the change without
+   *      a manual reload.
+   *
+   * Passing the WHOLE user instead of just the URL means the parent
+   * doesn't have to choose between "merge field" and "swap user" — it
+   * has both options.
    */
-  onAvatarChange: (avatar: string) => void;
-  /**
-   * Called after a successful delete. The avatar field has already been
-   * cleared in the database.
-   */
-  onAvatarRemove: () => void;
+  onAvatarPersisted: (user: User) => void;
   className?: string;
 }
 
@@ -30,8 +35,7 @@ const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif
 export function AvatarUpload({
   currentAvatar,
   userName,
-  onAvatarChange,
-  onAvatarRemove,
+  onAvatarPersisted,
   className = "",
 }: AvatarUploadProps) {
   const [isWorking, setIsWorking] = useState(false);
@@ -80,9 +84,11 @@ export function AvatarUpload({
       setIsWorking(true);
 
       try {
-        const { avatarUrl } = await api.me.uploadAvatar(file);
-        // Persisted. Swap the blob preview for the real URL via the parent.
-        onAvatarChange(avatarUrl);
+        // The response carries the full assembled user; we forward it
+        // wholesale so the parent can sync both its local form state and
+        // the global useProfile cache in one shot.
+        const { user } = await api.me.uploadAvatar(file);
+        onAvatarPersisted(user);
         URL.revokeObjectURL(localUrl);
         setPreviewUrl(null);
         toast.success("Avatar updated");
@@ -101,7 +107,7 @@ export function AvatarUpload({
         setIsWorking(false);
       }
     },
-    [onAvatarChange],
+    [onAvatarPersisted],
   );
 
   const handleUploadClick = useCallback(() => {
@@ -113,8 +119,8 @@ export function AvatarUpload({
     if (isWorking) return;
     setIsWorking(true);
     try {
-      await api.me.removeAvatar();
-      onAvatarRemove();
+      const { user } = await api.me.removeAvatar();
+      onAvatarPersisted(user);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       toast.success("Avatar removed");
@@ -129,7 +135,7 @@ export function AvatarUpload({
     } finally {
       setIsWorking(false);
     }
-  }, [isWorking, onAvatarRemove, previewUrl]);
+  }, [isWorking, onAvatarPersisted, previewUrl]);
 
   const displayAvatar = previewUrl || currentAvatar;
   const fallbackInitial = userName ? userName.charAt(0).toUpperCase() : "U";
