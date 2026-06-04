@@ -20,6 +20,7 @@ import type { User, PortfolioData } from "./types/portfolio";
 import { portfolioDataManager } from "./utils/portfolioDataManager";
 import { useAuth } from "./hooks/useAuth";
 import { useProfile } from "./hooks/useProfile";
+import { ApiError, api } from "./lib/api";
 import {
   ROUTES,
   pageIdToPath,
@@ -68,7 +69,7 @@ const VALID_PAGE_IDS: ReadonlySet<PageId> = new Set([
   'profile',
   'portfolios',
   'portfolio-viewer',
-  'spotlight',
+  'short-link',
 ]);
 
 export default function App() {
@@ -267,6 +268,38 @@ export default function App() {
     setChangedSections(sections);
   }, []);
 
+  /**
+   * Persist a new active template choice from the gallery.
+   *
+   * Fire-and-forget from the card's POV: we hit PUT /v1/me/portfolio,
+   * then refresh the user payload via `reload()` so the gallery's
+   * "Live" badge swaps onto the newly-selected card. We toast on both
+   * success and failure so the user always knows what happened.
+   *
+   * Errors thrown propagate to the card's catch path (which is a
+   * no-op besides resetting its local spinner) so we don't double-
+   * toast.
+   */
+  const handleSetActiveTemplate = useCallback(
+    async (templateId: string) => {
+      try {
+        await api.me.setTemplate(templateId);
+        await reload();
+        toast.success(`This template is now live at your public URL.`);
+      } catch (err) {
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Couldn't update template";
+        toast.error(message);
+        throw err;
+      }
+    },
+    [reload],
+  );
+
   useEffect(() => {
     if (!hasUnsavedChanges) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -297,7 +330,7 @@ export default function App() {
   // ChatWidget). Visitors should see the portfolio fullscreen, not our
   // editor's UI. We still mount <Toaster> so any future public-page actions
   // (e.g. "copy contact email") can surface feedback.
-  const isPublicPage = currentPage === 'spotlight';
+  const isPublicPage = currentPage === 'short-link';
 
   return (
     <div className="min-h-screen bg-background">
@@ -338,6 +371,8 @@ export default function App() {
                   onTemplateSelect={(id) => navigate(portfolioViewerPath(id, 'use'))}
                   onTemplatePreview={(id) => navigate(portfolioViewerPath(id, 'preview'))}
                   isProfileComplete={user ? portfolioDataManager.isProfileComplete(user) : false}
+                  activeTemplateId={user?.activeTemplate}
+                  onSetActiveTemplate={handleSetActiveTemplate}
                 />
               }
             />
@@ -404,9 +439,9 @@ export default function App() {
               }
             />
 
-            {/* Phase 1.1: anonymous public portfolio page. No auth, no chrome. */}
+            {/* Phase 1.2: anonymous public portfolio page by short code. */}
             <Route
-              path={`${ROUTES.spotlight}/:username`}
+              path={`${ROUTES.shortLink}/:code`}
               element={<PublicPortfolioPage />}
             />
 

@@ -14,9 +14,15 @@
  *   /portfolios                  template gallery
  *   /portfolios/:templateId      preview a template with dummy data (public)
  *   /portfolios/:templateId/use  render the current user's data in this template (auth required)
- *   /spotlight/:username         public shareable portfolio (anonymous, no chrome)
+ *   /p/:code                     public portfolio by Base62 short code (anonymous, no chrome)
  *
  * Anything else falls through to home (see App.tsx <Route path="*">).
+ *
+ * Phase 1.2 note: the old /spotlight/:username scheme has been removed
+ * entirely in favor of `/p/:code`. There is no in-app redirect for old
+ * usernames — they 404 by design, because the username column is no
+ * longer the public URL identity. Users who shared old URLs need to
+ * re-copy from the Profile page.
  */
 
 export const ROUTES = {
@@ -25,7 +31,7 @@ export const ROUTES = {
   signup: '/signup',
   profile: '/profile',
   portfolios: '/portfolios',
-  spotlight: '/spotlight',
+  shortLink: '/p',
 } as const;
 
 export type PageId =
@@ -35,11 +41,17 @@ export type PageId =
   | 'profile'
   | 'portfolios'
   | 'portfolio-viewer'
-  | 'spotlight';
+  | 'short-link';
 
-/** Build a public portfolio URL for the given username. */
-export function spotlightPath(username: string): string {
-  return `${ROUTES.spotlight}/${encodeURIComponent(username)}`;
+/**
+ * Build a public portfolio URL for the given short code.
+ *
+ * Returns just the path (e.g. "/p/k7j8H2p"); compose with
+ * `window.location.origin` at the call site when you need an
+ * absolute, shareable URL.
+ */
+export function shortLinkPath(code: string): string {
+  return `${ROUTES.shortLink}/${encodeURIComponent(code)}`;
 }
 
 /**
@@ -63,9 +75,9 @@ export function pageIdToPath(page: PageId): string {
       // Shouldn't be reached — viewer routes need a templateId. Fall back
       // to the gallery so the user lands somewhere useful.
       return ROUTES.portfolios;
-    case 'spotlight':
-      // Shouldn't be reached — spotlight routes need a username. Fall back
-      // to home; child components should always use spotlightPath() directly.
+    case 'short-link':
+      // Shouldn't be reached — short-link routes need a code. Fall back
+      // to home; child components should always use shortLinkPath() directly.
       return ROUTES.home;
   }
 }
@@ -88,7 +100,7 @@ export function pathToPageId(pathname: string): PageId {
   if (pathname.startsWith(ROUTES.login)) return 'login';
   if (pathname.startsWith(ROUTES.signup)) return 'signup';
   if (pathname.startsWith(ROUTES.profile)) return 'profile';
-  if (pathname.startsWith(`${ROUTES.spotlight}/`)) return 'spotlight';
+  if (pathname.startsWith(`${ROUTES.shortLink}/`)) return 'short-link';
   if (/^\/portfolios\/[^/]+/.test(pathname)) return 'portfolio-viewer';
   if (pathname.startsWith(ROUTES.portfolios)) return 'portfolios';
   return 'home';

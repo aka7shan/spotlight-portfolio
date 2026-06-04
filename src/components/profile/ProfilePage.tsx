@@ -6,7 +6,7 @@ import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { UnsavedChangesDialog } from "../common/UnsavedChangesDialog";
 import { ProfileHeader } from "./ProfileHeader";
-import { ShareSection } from "./ShareSection";
+import { ShortLinkCard } from "./ShortLinkCard";
 import { ProfileTab } from "./ProfileTab";
 import { ExperienceTab } from "./ExperienceTab";
 import { EducationTab } from "./EducationTab";
@@ -319,19 +319,18 @@ export function ProfilePage({
               </div>
             </div>
 
-            {/* Share section (Phase 1.1).
-                Lives outside the Tabs/Save flow because username changes
-                are persisted by their own dedicated endpoint. We patch
-                local formData + originalData when it fires so the Save
-                button doesn't think the form is dirty. */}
-            {formData.username && (
-              <ShareSection
-                user={formData}
-                onUsernameChanged={(newUser) => {
-                  // Update both halves of the change-detector so renaming
-                  // the username doesn't mark every other field as dirty.
-                  setFormData((prev) => ({ ...prev, username: newUser.username }));
-                  setOriginalData((prev) => ({ ...prev, username: newUser.username }));
+            {/* Short-link card (Phase 1.2).
+                Lives outside the Tabs/Save flow because regenerate has
+                its own dedicated endpoint with atomic semantics. We
+                patch both halves of the change-detector when the code
+                rotates so the Save button doesn't think the form is
+                dirty. */}
+            {formData.shortCode && (
+              <ShortLinkCard
+                shortCode={formData.shortCode}
+                onShortCodeChanged={(newCode) => {
+                  setFormData((prev) => ({ ...prev, shortCode: newCode }));
+                  setOriginalData((prev) => ({ ...prev, shortCode: newCode }));
                 }}
               />
             )}

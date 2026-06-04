@@ -5,21 +5,28 @@ import type { User, PortfolioData } from "../../types/portfolio";
 import { portfolioDataManager } from "../../utils/portfolioDataManager";
 
 /**
- * Public read-only portfolio at /spotlight/:username.
+ * Public read-only portfolio at `/p/:code`.
  *
- * Renders one of the existing portfolio templates, but without the editor
- * chrome (no toolbar, no info banner, no template switcher). What a visitor
- * sees is the same component the owner sees in the "view my portfolio"
- * flow, just stripped down.
- *
- * No auth is required — the fetch is anonymous.
+ * Phase 1.2 replaced the username-keyed URL scheme with a Base62 short
+ * code. The visitor's URL is opaque (`/p/k7j8H2p`) but the resolved
+ * portfolio is the same shape we serve to the authenticated owner —
+ * we just strip the internal user UUID server-side, render the
+ * owner's chosen template, and skip all editor chrome.
  *
  * Template selection
  * ------------------
- *  Phase 1.1 doesn't expose the owner's `portfolios.activeTemplate` over the
- *  wire yet, so we hard-code 'modern-tech' here. Phase 1.4 (theme
- *  customization) will return the owner's chosen template + theme overrides
- *  from the public endpoint and we'll switch on it here.
+ * The server returns `activeTemplate` (e.g. 'classic', 'modern-tech')
+ * with the public profile. We map that to one of the five template
+ * components below. Unknown ids fall back to 'classic' rather than
+ * breaking the render.
+ *
+ * Caching
+ * -------
+ * The backend serves an ETag + `Cache-Control: public, no-cache` on
+ * this endpoint, so repeat visitors revalidate against the CDN
+ * cache via `If-None-Match` and most cache hits return 304 with no
+ * body. We don't need any client-side cache here — the browser/CDN
+ * already handle the work.
  */
 
 const ClassicPortfolio = lazy(() =>
@@ -38,14 +45,11 @@ const CorporatePortfolio = lazy(() =>
   import("../portfolios/CorporatePortfolio").then((m) => ({ default: m.CorporatePortfolio })),
 );
 
-// Hard-coded default until we plumb the owner's chosen template through the
-// public endpoint (Phase 1.4). Modern-tech is the most generally-flattering
-// of the five.
-const DEFAULT_TEMPLATE = "modern-tech";
+const DEFAULT_TEMPLATE = "classic";
 
 type FetchState =
   | { kind: "loading" }
-  | { kind: "ok"; user: User }
+  | { kind: "ok"; user: User; templateId: string }
   | { kind: "not_found" }
   | { kind: "error"; message: string };
 
@@ -71,15 +75,14 @@ const Spinner = () => (
   </div>
 );
 
-const NotFound = ({ username }: { username: string }) => (
+const NotFound = () => (
   <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
     <div className="max-w-md space-y-4">
       <p className="text-6xl font-bold tracking-tight">404</p>
       <h1 className="text-2xl font-semibold">No portfolio at this address</h1>
       <p className="text-sm text-muted-foreground">
-        We couldn't find anyone with the username{" "}
-        <span className="font-mono text-foreground">{username}</span>.
-        Double-check the spelling or ask for an updated link.
+        This short link is invalid or has been retired. Double-check the URL,
+        or ask its owner for the current link.
       </p>
       <a
         href="/"
@@ -108,8 +111,8 @@ const ErrorPanel = ({ message, onRetry }: { message: string; onRetry: () => void
 );
 
 export function PublicPortfolioPage() {
-  const params = useParams<{ username: string }>();
-  const username = params.username ?? "";
+  const params = useParams<{ code: string }>();
+  const code = params.code ?? "";
 
   const [state, setState] = useState<FetchState>({ kind: "loading" });
   // Bump to retry on demand. We don't put it in `state` because that would
@@ -117,7 +120,7 @@ export function PublicPortfolioPage() {
   const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
-    if (!username) {
+    if (!code) {
       setState({ kind: "not_found" });
       return;
     }
@@ -126,14 +129,16 @@ export function PublicPortfolioPage() {
     setState({ kind: "loading" });
 
     api.public
-      .get(username)
+      .getByCode(code)
       .then((res) => {
         if (cancelled) return;
-        // Public response omits `id`. The template components don't read it
-        // anyway, but our User type requires it — fill in a placeholder so
-        // TS is happy. Anything that ever rendered this `id` would be a bug.
+        // Public response omits `id`. The template components don't read
+        // it anyway, but our User type requires it — fill in a placeholder
+        // so TS is happy. Anything that ever rendered this `id` would be
+        // a bug.
         const user: User = { id: "public", ...res.user };
-        setState({ kind: "ok", user });
+        const templateId = res.user.activeTemplate ?? DEFAULT_TEMPLATE;
+        setState({ kind: "ok", user, templateId });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -153,7 +158,7 @@ export function PublicPortfolioPage() {
     return () => {
       cancelled = true;
     };
-  }, [username, retryNonce]);
+  }, [code, retryNonce]);
 
   // Update the document title + description on success so a visitor who
   // shares the URL gets a meaningful preview in the browser tab and via
@@ -163,13 +168,13 @@ export function PublicPortfolioPage() {
   useEffect(() => {
     if (state.kind !== "ok") return;
     const prevTitle = document.title;
-    const owner = state.user.name || username;
+    const owner = state.user.name || "Portfolio";
     const title = state.user.title ? `${owner} — ${state.user.title}` : owner;
     document.title = `${title} · Spotlight`;
     return () => {
       document.title = prevTitle;
     };
-  }, [state, username]);
+  }, [state]);
 
   const portfolioData: PortfolioData | null = useMemo(() => {
     if (state.kind !== "ok") return null;
@@ -177,7 +182,7 @@ export function PublicPortfolioPage() {
   }, [state]);
 
   if (state.kind === "loading") return <Spinner />;
-  if (state.kind === "not_found") return <NotFound username={username} />;
+  if (state.kind === "not_found") return <NotFound />;
   if (state.kind === "error") {
     return (
       <ErrorPanel
@@ -187,7 +192,7 @@ export function PublicPortfolioPage() {
     );
   }
 
-  const Template = selectTemplate(DEFAULT_TEMPLATE);
+  const Template = selectTemplate(state.templateId);
   return (
     <div className="min-h-screen bg-background">
       <Suspense fallback={<Spinner />}>

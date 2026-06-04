@@ -1,10 +1,21 @@
 export interface User {
   id: string;
-  // Phase 1.1: public-URL slug (the part after /spotlight/ in the shareable
-  // link). Optional in the type so legacy code paths that build a User
-  // without the full backend payload still compile, but every User loaded
-  // from GET /v1/me will carry this.
+  // Username is kept for display purposes (e.g. "@akarshan" greeting) but is
+  // no longer part of the public URL. Public portfolios are addressed by
+  // `shortCode` instead — see Phase 1.2.
   username?: string;
+  /**
+   * Phase 1.2: Base62 short code that addresses the user's public portfolio
+   * at `/p/<shortCode>`. Optional in the type so legacy code paths that
+   * build a User without the full backend payload still compile, but every
+   * User loaded from GET /v1/me will carry this.
+   */
+  shortCode?: string;
+  /**
+   * Phase 1.2: which template renders the public page (e.g. 'classic',
+   * 'modern-tech'). Optional for the same reason as `shortCode` above.
+   */
+  activeTemplate?: string;
   name: string;
   title?: string;
   email: string;

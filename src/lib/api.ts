@@ -190,6 +190,14 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 export interface MeResponse {
   user: User & {
     username: string;
+    /**
+     * Phase 1.2: Base62 short code that addresses this user's public
+     * portfolio at `/p/<shortCode>`. Always populated on responses —
+     * the backend lazily backfills missing codes on first GET /v1/me.
+     */
+    shortCode: string;
+    /** Which template id renders the public page (e.g. 'classic'). */
+    activeTemplate: string;
     createdAt: string;
     updatedAt: string;
   };
@@ -200,45 +208,34 @@ export interface AvatarUploadResponse extends MeResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 1.1 — share / public-username contract
+// Phase 1.2 — short-link & template contract
 // ---------------------------------------------------------------------------
 
 /**
- * Reasons a candidate username could fail. Maps 1:1 to backend `kind` codes
- * from src/lib/slug.ts so the frontend can show field-specific messages
- * without parsing free-text errors.
+ * Response from PUT /v1/me/portfolio. Carries the new template + the
+ * portfolio's short code so the caller can update its local copy
+ * without a follow-up GET.
  */
-export type UsernameRejectionKind =
-  | 'too_short'
-  | 'too_long'
-  | 'invalid_format'
-  | 'reserved'
-  | 'taken';
-
-/**
- * Result of GET /v1/me/share/check?username=foo.
- *
- *   - available: true                       → free to claim
- *   - available: false, kind: 'taken_by_self' → it's already yours (no-op)
- *   - available: false, kind: <other>       → can't be claimed, see `message`
- */
-export interface ShareCheckResponse {
-  available: boolean;
-  kind: UsernameRejectionKind | 'available' | 'taken_by_self';
-  message?: string;
-}
-
-export interface ShareSuggestResponse {
-  username: string;
-}
-
-export interface ShareUpdateResponse extends MeResponse {
-  username: string;
+export interface UpdateTemplateResponse {
+  portfolio: {
+    templateId: string;
+    shortCode: string;
+    updatedAt: string;
+  };
 }
 
 /**
- * Public portfolio response. Everything from MeResponse EXCEPT the internal
- * user UUID (stripped server-side for visitor privacy).
+ * Response from POST /v1/me/share-link/regenerate. The OLD code stops
+ * working immediately; the caller should swap the displayed URL.
+ */
+export interface RegenerateShortLinkResponse {
+  shortCode: string;
+  updatedAt: string;
+}
+
+/**
+ * Public portfolio response. Everything from MeResponse EXCEPT the
+ * internal user UUID (stripped server-side for visitor privacy).
  */
 export interface PublicProfileResponse {
   user: Omit<MeResponse['user'], 'id'>;
@@ -271,60 +268,43 @@ export const api = {
     /** Remove the current avatar from Storage AND clear the DB field. */
     removeAvatar: () =>
       request<MeResponse>('/v1/me/avatar', { method: 'DELETE' }),
-  },
 
-  /**
-   * Phase 1.1 — share/public-URL management for the signed-in user.
-   *
-   * The four endpoints map 1:1 to the backend's /v1/me/share/* routes;
-   * keeping them in their own namespace (`api.share.*`) signals at the
-   * call site that these touch a *separate* concern from the rest of the
-   * profile (no form-dirty interaction, no PUT-coupling).
-   */
-  share: {
     /**
-     * Cheap availability probe. Used by the rename UI's debounced
-     * autocomplete. Format errors come back as `available: false` with a
-     * `kind` you can show inline.
+     * Set the active portfolio template. The choice is what
+     * `/p/<shortCode>` will render. Fire-and-forget from the gallery
+     * — the caller does not need to round-trip the user's whole
+     * profile form to change the template.
      */
-    check: (username: string) =>
-      request<ShareCheckResponse>(
-        `/v1/me/share/check?username=${encodeURIComponent(username)}`,
-      ),
+    setTemplate: (templateId: string) =>
+      request<UpdateTemplateResponse>('/v1/me/portfolio', {
+        method: 'PUT',
+        body: { templateId },
+      }),
 
     /**
-     * Ask the server for a random base62 candidate that's currently free.
-     * Always returns a username; throws ApiError(503) if it somehow can't
-     * find one in 5 tries (extremely unlikely).
-     */
-    suggest: () => request<ShareSuggestResponse>('/v1/me/share/suggest'),
-
-    /**
-     * Commit a username rename. Server validates format + uniqueness, then
-     * updates profiles.username atomically. On success the response carries
-     * the full assembled user so the caller can refresh local state in one
-     * shot.
+     * Mint a new short code, retiring the previous one. Use case: user
+     * wants to rotate a link that's been shared too widely or that
+     * they want to retire.
      *
-     * Common error shapes:
-     *   400 + kind: 'invalid_format' / 'too_short' / 'too_long' / 'reserved'
-     *   409 + kind: 'taken'  (someone else owns it)
+     * The previous code 404s immediately at the DB layer (no grace
+     * period). The frontend should update its displayed URL with the
+     * response value the moment this resolves.
      */
-    update: (username: string) =>
-      request<ShareUpdateResponse>('/v1/me/share', {
-        method: 'PATCH',
-        body: { username },
+    regenerateShortLink: () =>
+      request<RegenerateShortLinkResponse>('/v1/me/share-link/regenerate', {
+        method: 'POST',
       }),
   },
 
   /**
-   * Phase 1.1 — anonymous public lookup. Used by the /spotlight/:username
-   * page. Skips the auth header so we don't accidentally use the visitor's
-   * session for someone else's URL.
+   * Phase 1.2 — anonymous public lookup by short code. Used by the
+   * /p/:code page. Skips the auth header so we don't accidentally use
+   * the visitor's session for someone else's URL.
    */
   public: {
-    get: (username: string) =>
+    getByCode: (code: string) =>
       request<PublicProfileResponse>(
-        `/v1/public/${encodeURIComponent(username)}`,
+        `/v1/p/${encodeURIComponent(code)}`,
         { anonymous: true },
       ),
   },

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -8,7 +9,7 @@ import {
 } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { motion } from "framer-motion";
-import { Star, Eye, Upload } from "lucide-react";
+import { CheckCircle, Eye, Globe, Loader2, Star, Upload } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ImageWithFallback } from "../common/ImageWithFallback";
 
@@ -37,6 +38,21 @@ export interface TemplateCardProps {
   isProfileComplete: boolean;
   onTemplateAction: (templateId: string, action: "preview" | "upload") => void;
   onNavigate: (page: string) => void;
+  /**
+   * Currently active template id (what `/p/<code>` renders). Used to
+   * show an "Active" badge on the matching card and disable the
+   * "Set as Public" button when there's nothing to change.
+   *
+   * Optional so anonymous gallery views (no signed-in user) work
+   * without it.
+   */
+  activeTemplateId?: string;
+  /**
+   * Called when the user clicks "Set as Public". Returns a promise so
+   * the card can render a spinner; resolve / reject control the toast
+   * the parent shows.
+   */
+  onSetActive?: (templateId: string) => Promise<void>;
 }
 
 export function TemplateCard({
@@ -48,7 +64,25 @@ export function TemplateCard({
   isProfileComplete,
   onTemplateAction,
   onNavigate,
+  activeTemplateId,
+  onSetActive,
 }: TemplateCardProps) {
+  const isActive = activeTemplateId === template.id;
+  const [isSettingActive, setIsSettingActive] = useState(false);
+
+  const handleSetActive = async () => {
+    if (!onSetActive || isActive) return;
+    setIsSettingActive(true);
+    try {
+      await onSetActive(template.id);
+    } finally {
+      // Reset regardless of outcome — the parent shows the toast and
+      // re-renders this card with the new activeTemplateId on success.
+      setIsSettingActive(false);
+    }
+  };
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -78,6 +112,17 @@ export function TemplateCard({
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
             <span className="text-xs font-medium">{template.rating}</span>
           </div>
+
+          {/* Active badge — the one rendered at /p/<code> right now. */}
+          {isActive && (
+            <Badge
+              className="absolute top-3 right-3 bg-green-600 hover:bg-green-600 text-white border-0 shadow-md"
+              title="Currently rendered at your public URL"
+            >
+              <Globe className="w-3 h-3 mr-1" />
+              Live
+            </Badge>
+          )}
         </div>
 
         <CardHeader className="pb-3">
@@ -144,38 +189,70 @@ export function TemplateCard({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onTemplateAction(template.id, "preview")}
-              className="flex-1"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Preview
-            </Button>
-
-            {user && isProfileComplete ? (
+          <div className="flex flex-col gap-2 pt-2">
+            <div className="flex gap-2">
               <Button
-                size="sm"
-                onClick={() => onTemplateAction(template.id, "upload")}
-                className={`flex-1 ${styles.greenGradientButton}`}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Data
-              </Button>
-            ) : (
-              <Button
-                size="sm"
                 variant="outline"
-                onClick={() =>
-                  user ? onNavigate("profile") : onNavigate("signup")
-                }
-                className={styles.signupFirstButton}
-                disabled={!user}
+                size="sm"
+                onClick={() => onTemplateAction(template.id, "preview")}
+                className="flex-1"
               >
-                <Upload className="w-4 h-4 mr-2" />
-                {user ? "Complete Profile" : "Sign Up First"}
+                <Eye className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
+
+              {user && isProfileComplete ? (
+                <Button
+                  size="sm"
+                  onClick={() => onTemplateAction(template.id, "upload")}
+                  className={`flex-1 ${styles.greenGradientButton}`}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Data
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    user ? onNavigate("profile") : onNavigate("signup")
+                  }
+                  className={styles.signupFirstButton}
+                  disabled={!user}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {user ? "Complete Profile" : "Sign Up First"}
+                </Button>
+              )}
+            </div>
+
+            {/* "Set as Public" row — only meaningful for signed-in users
+                with a complete profile. We render it even when inactive
+                so the affordance is always discoverable, but disable
+                it on the currently-active card. */}
+            {user && onSetActive && (
+              <Button
+                size="sm"
+                variant={isActive ? "outline" : "default"}
+                onClick={handleSetActive}
+                disabled={isActive || isSettingActive || !isProfileComplete}
+                className="w-full"
+                title={
+                  isActive
+                    ? "This template is already live at your public URL"
+                    : !isProfileComplete
+                      ? "Complete your profile first"
+                      : "Render this template at your public URL"
+                }
+              >
+                {isSettingActive ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : isActive ? (
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                ) : (
+                  <Globe className="w-4 h-4 mr-2" />
+                )}
+                {isActive ? "Currently public" : "Set as Public"}
               </Button>
             )}
           </div>

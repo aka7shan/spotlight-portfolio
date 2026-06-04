@@ -24,6 +24,19 @@ interface PortfolioGalleryProps {
   onTemplateSelect: (templateId: string) => void;
   onTemplatePreview: (templateId: string) => void;
   isProfileComplete: boolean;
+  /**
+   * Phase 1.2: which template renders at the user's public URL right
+   * now. The matching card shows a "Live" badge; the "Set as Public"
+   * button is disabled on that card.
+   */
+  activeTemplateId?: string;
+  /**
+   * Phase 1.2: persist a new active template choice. The parent owns
+   * the network call (so we can refresh the user payload in one place
+   * after success). Returns a promise so the card spinner has
+   * something to wait on.
+   */
+  onSetActiveTemplate?: (templateId: string) => Promise<void>;
 }
 
 const portfolioTemplates = [
@@ -96,7 +109,15 @@ const portfolioTemplates = [
 
 const categories = ['All', 'Technology', 'Creative', 'Professional', 'Business', 'Traditional'];
 
-export function PortfolioGallery({ onNavigate, user, onTemplateSelect, onTemplatePreview, isProfileComplete }: PortfolioGalleryProps) {
+export function PortfolioGallery({
+  onNavigate,
+  user,
+  onTemplateSelect,
+  onTemplatePreview,
+  isProfileComplete,
+  activeTemplateId,
+  onSetActiveTemplate,
+}: PortfolioGalleryProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
@@ -266,6 +287,8 @@ export function PortfolioGallery({ onNavigate, user, onTemplateSelect, onTemplat
               isProfileComplete={isProfileComplete}
               onTemplateAction={handleTemplateAction}
               onNavigate={onNavigate}
+              activeTemplateId={activeTemplateId}
+              onSetActive={onSetActiveTemplate}
             />
           ))}
         </div>
