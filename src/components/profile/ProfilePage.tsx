@@ -107,18 +107,36 @@ export function ProfilePage({
    * about, …) survive. The full-form save flow is unaffected.
    */
   const handleUserPersisted = useCallback((updatedUser: User) => {
+    // Surgical merge — only the fields persisted by their own
+    // endpoints. CV-related fields (`cv`) are included because the
+    // CV upload/delete routes commit them directly to the DB just
+    // like avatar/cover do, so they must move on both sides
+    // (formData AND originalData) to keep the dirty-flag honest.
     setFormData((prev) => ({
       ...prev,
       avatar: updatedUser.avatar,
       coverImage: updatedUser.coverImage,
+      cv: updatedUser.cv,
     }));
     setOriginalData((prev) => ({
       ...prev,
       avatar: updatedUser.avatar,
       coverImage: updatedUser.coverImage,
+      cv: updatedUser.cv,
     }));
     onUserPersisted(updatedUser);
   }, [onUserPersisted]);
+
+  /**
+   * Merge the accepted output of an AI CV parse into the form. Unlike
+   * `handleUserPersisted`, this is *meant* to flag the form as dirty
+   * — the user reviews the diff, taps Apply, and then has to click
+   * Save Changes to actually persist. So we only touch `formData`,
+   * leaving `originalData` alone so the change-detector picks it up.
+   */
+  const handleApplyExtracted = useCallback((partial: Partial<User>) => {
+    setFormData((prev) => ({ ...prev, ...partial }));
+  }, []);
 
   // Profile completeness is computed from a single source of truth so the
   // progress bar here, the "View Templates" gate, and PortfolioGallery's
@@ -478,9 +496,11 @@ export function ProfilePage({
                 <div className="p-8">
                   {/* Profile Tab - Using modular component */}
                   <TabsContent value="profile" className="mt-0">
-                    <ProfileTab 
-                      formData={formData} 
-                      handleInputChange={handleInputChange} 
+                    <ProfileTab
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                      onUserPersisted={handleUserPersisted}
+                      onApplyExtracted={handleApplyExtracted}
                     />
                   </TabsContent>
 

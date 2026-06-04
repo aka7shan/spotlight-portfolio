@@ -212,6 +212,117 @@ export interface CoverUploadResponse extends MeResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 1.2 — CV upload + AI parse contract
+// ---------------------------------------------------------------------------
+
+/**
+ * Response from POST /v1/me/cv. The file is stored in the private `cvs`
+ * bucket; `signedUrl` is a short-lived link (~10 min) so the frontend can
+ * offer an immediate "View uploaded file" action.
+ */
+export interface CvUploadResponse extends MeResponse {
+  cv: {
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    signedUrl: string;
+  };
+}
+
+/**
+ * Shape returned by POST /v1/me/cv/parse. Mirrors the *frontend Zod
+ * shape* (PascalCase enums, frontend-friendly field names) so the diff UI
+ * can splice it directly into the existing form state without another
+ * translation layer.
+ *
+ * Every field is optional — the LLM is instructed to omit anything it
+ * can't infer, so an empty CV produces an empty object instead of
+ * hallucinated data.
+ */
+export interface CvParseExtracted {
+  name?: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  about?: string;
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    twitter?: string;
+    website?: string;
+    dribbble?: string;
+    behance?: string;
+  };
+  skills?: string[];
+  experience?: Array<{
+    position: string;
+    company: string;
+    startDate: string;
+    endDate?: string;
+    isPresent?: boolean;
+    description?: string;
+    location?: string;
+    skills?: string[];
+  }>;
+  education?: Array<{
+    degree: string;
+    institution: string;
+    startDate: string;
+    endDate?: string;
+    isPresent?: boolean;
+    gpa?: string;
+    description?: string;
+    achievements?: string[];
+  }>;
+  projects?: Array<{
+    name: string;
+    description: string;
+    tags?: string[];
+    link?: string;
+    githubLink?: string;
+    status: 'Completed' | 'In Progress' | 'Planned';
+    startDate?: string;
+    endDate?: string;
+    role?: string;
+    technologies?: string[];
+    achievements?: string[];
+  }>;
+  certifications?: Array<{
+    name: string;
+    issuer: string;
+    startDate: string;
+    endDate?: string;
+    isPresent?: boolean;
+    credentialId?: string;
+    link?: string;
+    expiryDate?: string;
+  }>;
+  achievements?: Array<{
+    title: string;
+    description?: string;
+    startDate: string;
+    organization?: string;
+    link?: string;
+  }>;
+  languages?: Array<{
+    name: string;
+    level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Fluent' | 'Native' | 'Expert';
+    certification?: string;
+  }>;
+}
+
+export interface CvParseResponse {
+  extracted: CvParseExtracted;
+  meta: {
+    modelUsed: string;
+    usage: { inputTokens: number; outputTokens: number };
+    inputTruncated: boolean;
+    inputBytes: number;
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Phase 1.2 — short-link & template contract
 // ---------------------------------------------------------------------------
 
@@ -291,6 +402,41 @@ export const api = {
     /** Remove the current cover from Storage AND clear the DB field. */
     removeCover: () =>
       request<MeResponse>('/v1/me/cover', { method: 'DELETE' }),
+
+    /**
+     * Upload a new CV (PDF / DOCX). Backend stores the bytes in the
+     * private `cvs` bucket and records metadata on the profile. The
+     * returned `signedUrl` is short-lived (~10 min) and meant for an
+     * immediate "View uploaded file" action; don't persist it.
+     */
+    uploadCv: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return request<CvUploadResponse>('/v1/me/cv', {
+        method: 'POST',
+        body: form,
+      });
+    },
+
+    /**
+     * Run AI extraction on the CV currently stored for this user.
+     * Does NOT write to the profile — the caller renders a diff UI and
+     * sends the accepted sections via `update`.
+     *
+     * Errors to anticipate (statuses are stable):
+     *   - 404: no CV uploaded yet
+     *   - 415: legacy .doc (we don't extract text from it)
+     *   - 422: CV had no extractable text (scanned PDF)
+     *   - 429: hit the per-user parse rate limit
+     *   - 502: AI provider transiently unavailable
+     *   - 503: AI not configured on the server
+     */
+    parseCv: () =>
+      request<CvParseResponse>('/v1/me/cv/parse', { method: 'POST' }),
+
+    /** Remove the CV from Storage AND clear the DB metadata. */
+    removeCv: () =>
+      request<MeResponse>('/v1/me/cv', { method: 'DELETE' }),
 
     /**
      * Set the active portfolio template. The choice is what

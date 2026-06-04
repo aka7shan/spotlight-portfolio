@@ -15,9 +15,21 @@
   interface ProfileTabProps {
     formData: User;
     handleInputChange: (field: keyof User, value: any) => void;
+    /**
+     * Forwarded straight to `CVManager`. Phase 1.2 introduced two real
+     * persistence callbacks that ProfilePage owns; we pass them through
+     * here so this tab doesn't have to know anything about the API.
+     */
+    onUserPersisted: (user: User) => void;
+    onApplyExtracted: (partial: Partial<User>) => void;
   }
   
-  export function ProfileTab({ formData, handleInputChange }: ProfileTabProps) {
+  export function ProfileTab({
+    formData,
+    handleInputChange,
+    onUserPersisted,
+    onApplyExtracted,
+  }: ProfileTabProps) {
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [projectDialogOpen, setProjectDialogOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<{ index: number; project: Project } | null>(null);
@@ -82,14 +94,10 @@
       setTimeout(validateData, 0);
     }, [formData.skills, handleInputChange, validateData]);
   
-    // CV handlers
-    const handleCVUpload = useCallback((cvData: any) => {
-      handleInputChange('cv', cvData);
-    }, [handleInputChange]);
-  
-    const handleCVRemove = useCallback(() => {
-      handleInputChange('cv', undefined);
-    }, [handleInputChange]);
+    // CV upload/remove are handled by the backend's dedicated endpoints
+    // (see CVManager). We don't need a local stub anymore; the
+    // `onUserPersisted` prop bubbles the updated User up to ProfilePage,
+    // which surgically updates form state without flagging dirty.
   
     const addSampleProjects = useCallback(() => {
       const sampleProjects = [
@@ -238,11 +246,11 @@
           </CardContent>
         </Card>
   
-        {/* CV/Resume Section */}
+        {/* CV / Resume — upload + AI auto-fill (Phase 1.2). */}
         <CVManager
-          cvData={formData.cv}
-          onCVUpload={handleCVUpload}
-          onCVRemove={handleCVRemove}
+          currentUser={formData}
+          onUserPersisted={onUserPersisted}
+          onApplyExtracted={onApplyExtracted}
           className="border-0 shadow-lg"
         />
   
