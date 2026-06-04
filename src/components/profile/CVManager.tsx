@@ -187,7 +187,10 @@ export function CVManager({
               "If it's a scanned PDF, please upload a text-based version.",
           });
         } else if (err.status === 429) {
-          toast.error("Hit the AI parse limit. Try again in an hour.");
+          // Backend includes the relevant wait-time and ownership info
+          // ("our limit, not Gemini's") in the message — defer to it
+          // rather than hard-coding stale copy here.
+          toast.error(err.message);
         } else if (err.status === 503) {
           toast.error("AI auto-fill isn't enabled on this server yet.");
         } else if (err.status === 502) {
