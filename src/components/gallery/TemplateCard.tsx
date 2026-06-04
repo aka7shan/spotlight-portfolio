@@ -229,8 +229,13 @@ export function TemplateCard({
             {/* "Set as Public" row — only meaningful for signed-in users
                 with a complete profile. We render it even when inactive
                 so the affordance is always discoverable, but disable
-                it on the currently-active card. */}
-            {user && onSetActive && (
+                it on the currently-active card.
+
+                `user` is typed as `unknown` on this card (the prop is
+                only used as a truthiness flag), so coerce to boolean
+                before the `&&` chain — otherwise TS infers `unknown` as
+                a possible result and it's not assignable to ReactNode. */}
+            {Boolean(user) && onSetActive && (
               <Button
                 size="sm"
                 variant={isActive ? "outline" : "default"}
