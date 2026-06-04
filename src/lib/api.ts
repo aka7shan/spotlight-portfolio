@@ -207,6 +207,10 @@ export interface AvatarUploadResponse extends MeResponse {
   avatarUrl: string;
 }
 
+export interface CoverUploadResponse extends MeResponse {
+  coverUrl: string;
+}
+
 // ---------------------------------------------------------------------------
 // Phase 1.2 — short-link & template contract
 // ---------------------------------------------------------------------------
@@ -268,6 +272,25 @@ export const api = {
     /** Remove the current avatar from Storage AND clear the DB field. */
     removeAvatar: () =>
       request<MeResponse>('/v1/me/avatar', { method: 'DELETE' }),
+
+    /**
+     * Upload a new cover image. Mirrors `uploadAvatar` — backend writes to
+     * Supabase Storage and atomically updates profiles.cover_url. The
+     * resolved response carries the full assembled User plus a standalone
+     * `coverUrl` for callers that only need that.
+     */
+    uploadCover: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return request<CoverUploadResponse>('/v1/me/cover', {
+        method: 'POST',
+        body: form,
+      });
+    },
+
+    /** Remove the current cover from Storage AND clear the DB field. */
+    removeCover: () =>
+      request<MeResponse>('/v1/me/cover', { method: 'DELETE' }),
 
     /**
      * Set the active portfolio template. The choice is what
