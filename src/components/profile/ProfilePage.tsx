@@ -364,8 +364,10 @@ export function ProfilePage({
                       View Templates
                     </Button>
                   )}
-                  <Button 
-                    onClick={handleSave} 
+                  <Button
+                    onClick={handleSave}
+                    disabled={!hasUnsavedChanges}
+                    title={hasUnsavedChanges ? undefined : "No changes to save"}
                     className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
                   >
                     <Save className="w-4 h-4" />
