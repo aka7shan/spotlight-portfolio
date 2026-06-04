@@ -1,5 +1,10 @@
 export interface User {
   id: string;
+  // Phase 1.1: public-URL slug (the part after /spotlight/ in the shareable
+  // link). Optional in the type so legacy code paths that build a User
+  // without the full backend payload still compile, but every User loaded
+  // from GET /v1/me will carry this.
+  username?: string;
   name: string;
   title?: string;
   email: string;

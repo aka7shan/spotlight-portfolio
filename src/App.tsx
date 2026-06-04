@@ -39,6 +39,7 @@ const importSignupPage = () => import("./components/signup/SignupPage");
 const importPortfolioGallery = () => import("./components/gallery/PortfolioGallery");
 const importProfilePage = () => import("./components/profile/ProfilePage");
 const importPortfolioViewer = () => import("./components/viewer/PortfolioViewer");
+const importPublicPortfolioPage = () => import("./components/public/PublicPortfolioPage");
 
 const LoginPage = lazy(() => importLoginPage().then((m) => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => importSignupPage().then((m) => ({ default: m.SignupPage })));
@@ -48,6 +49,9 @@ const PortfolioGallery = lazy(() =>
 const ProfilePage = lazy(() => importProfilePage().then((m) => ({ default: m.ProfilePage })));
 const PortfolioViewer = lazy(() =>
   importPortfolioViewer().then((m) => ({ default: m.PortfolioViewer })),
+);
+const PublicPortfolioPage = lazy(() =>
+  importPublicPortfolioPage().then((m) => ({ default: m.PublicPortfolioPage })),
 );
 
 const RouteFallback = () => (
@@ -64,6 +68,7 @@ const VALID_PAGE_IDS: ReadonlySet<PageId> = new Set([
   'profile',
   'portfolios',
   'portfolio-viewer',
+  'spotlight',
 ]);
 
 export default function App() {
@@ -288,15 +293,23 @@ export default function App() {
   const isAuthed = authStatus === "authenticated";
   const isProfileLoading = isAuthed && profileStatus === "loading" && !user;
 
+  // Public portfolio pages render without the app chrome (no Navigation, no
+  // ChatWidget). Visitors should see the portfolio fullscreen, not our
+  // editor's UI. We still mount <Toaster> so any future public-page actions
+  // (e.g. "copy contact email") can surface feedback.
+  const isPublicPage = currentPage === 'spotlight';
+
   return (
     <div className="min-h-screen bg-background">
-      <Navigation
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        onNavigationRequest={handleNavigationRequest}
-        user={navUser}
-        onLogout={handleLogout}
-      />
+      {!isPublicPage && (
+        <Navigation
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onNavigationRequest={handleNavigationRequest}
+          user={navUser}
+          onLogout={handleLogout}
+        />
+      )}
 
       <ErrorBoundary key={location.pathname}>
         <Suspense fallback={<RouteFallback />}>
@@ -391,6 +404,12 @@ export default function App() {
               }
             />
 
+            {/* Phase 1.1: anonymous public portfolio page. No auth, no chrome. */}
+            <Route
+              path={`${ROUTES.spotlight}/:username`}
+              element={<PublicPortfolioPage />}
+            />
+
             <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
           </Routes>
         </Suspense>
@@ -405,8 +424,11 @@ export default function App() {
         targetDestination={dialogDestination}
       />
 
-      {/* ChatWidget is purely a logged-in-user feature; hide on auth screens. */}
-      {currentPage !== "login" && currentPage !== "signup" && <ChatWidget />}
+      {/* ChatWidget is purely a logged-in-user feature; hide on auth and
+          public-portfolio screens. */}
+      {!isPublicPage &&
+        currentPage !== "login" &&
+        currentPage !== "signup" && <ChatWidget />}
       <Toaster position="top-right" richColors closeButton />
     </div>
   );

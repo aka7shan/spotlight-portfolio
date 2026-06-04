@@ -199,6 +199,51 @@ export interface AvatarUploadResponse extends MeResponse {
   avatarUrl: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 1.1 — share / public-username contract
+// ---------------------------------------------------------------------------
+
+/**
+ * Reasons a candidate username could fail. Maps 1:1 to backend `kind` codes
+ * from src/lib/slug.ts so the frontend can show field-specific messages
+ * without parsing free-text errors.
+ */
+export type UsernameRejectionKind =
+  | 'too_short'
+  | 'too_long'
+  | 'invalid_format'
+  | 'reserved'
+  | 'taken';
+
+/**
+ * Result of GET /v1/me/share/check?username=foo.
+ *
+ *   - available: true                       → free to claim
+ *   - available: false, kind: 'taken_by_self' → it's already yours (no-op)
+ *   - available: false, kind: <other>       → can't be claimed, see `message`
+ */
+export interface ShareCheckResponse {
+  available: boolean;
+  kind: UsernameRejectionKind | 'available' | 'taken_by_self';
+  message?: string;
+}
+
+export interface ShareSuggestResponse {
+  username: string;
+}
+
+export interface ShareUpdateResponse extends MeResponse {
+  username: string;
+}
+
+/**
+ * Public portfolio response. Everything from MeResponse EXCEPT the internal
+ * user UUID (stripped server-side for visitor privacy).
+ */
+export interface PublicProfileResponse {
+  user: Omit<MeResponse['user'], 'id'>;
+}
+
 export const api = {
   health: () => request<{ status: string }>('/health', { anonymous: true }),
 
@@ -226,5 +271,61 @@ export const api = {
     /** Remove the current avatar from Storage AND clear the DB field. */
     removeAvatar: () =>
       request<MeResponse>('/v1/me/avatar', { method: 'DELETE' }),
+  },
+
+  /**
+   * Phase 1.1 — share/public-URL management for the signed-in user.
+   *
+   * The four endpoints map 1:1 to the backend's /v1/me/share/* routes;
+   * keeping them in their own namespace (`api.share.*`) signals at the
+   * call site that these touch a *separate* concern from the rest of the
+   * profile (no form-dirty interaction, no PUT-coupling).
+   */
+  share: {
+    /**
+     * Cheap availability probe. Used by the rename UI's debounced
+     * autocomplete. Format errors come back as `available: false` with a
+     * `kind` you can show inline.
+     */
+    check: (username: string) =>
+      request<ShareCheckResponse>(
+        `/v1/me/share/check?username=${encodeURIComponent(username)}`,
+      ),
+
+    /**
+     * Ask the server for a random base62 candidate that's currently free.
+     * Always returns a username; throws ApiError(503) if it somehow can't
+     * find one in 5 tries (extremely unlikely).
+     */
+    suggest: () => request<ShareSuggestResponse>('/v1/me/share/suggest'),
+
+    /**
+     * Commit a username rename. Server validates format + uniqueness, then
+     * updates profiles.username atomically. On success the response carries
+     * the full assembled user so the caller can refresh local state in one
+     * shot.
+     *
+     * Common error shapes:
+     *   400 + kind: 'invalid_format' / 'too_short' / 'too_long' / 'reserved'
+     *   409 + kind: 'taken'  (someone else owns it)
+     */
+    update: (username: string) =>
+      request<ShareUpdateResponse>('/v1/me/share', {
+        method: 'PATCH',
+        body: { username },
+      }),
+  },
+
+  /**
+   * Phase 1.1 — anonymous public lookup. Used by the /spotlight/:username
+   * page. Skips the auth header so we don't accidentally use the visitor's
+   * session for someone else's URL.
+   */
+  public: {
+    get: (username: string) =>
+      request<PublicProfileResponse>(
+        `/v1/public/${encodeURIComponent(username)}`,
+        { anonymous: true },
+      ),
   },
 };

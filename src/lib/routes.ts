@@ -14,6 +14,7 @@
  *   /portfolios                  template gallery
  *   /portfolios/:templateId      preview a template with dummy data (public)
  *   /portfolios/:templateId/use  render the current user's data in this template (auth required)
+ *   /spotlight/:username         public shareable portfolio (anonymous, no chrome)
  *
  * Anything else falls through to home (see App.tsx <Route path="*">).
  */
@@ -24,6 +25,7 @@ export const ROUTES = {
   signup: '/signup',
   profile: '/profile',
   portfolios: '/portfolios',
+  spotlight: '/spotlight',
 } as const;
 
 export type PageId =
@@ -32,7 +34,13 @@ export type PageId =
   | 'signup'
   | 'profile'
   | 'portfolios'
-  | 'portfolio-viewer';
+  | 'portfolio-viewer'
+  | 'spotlight';
+
+/** Build a public portfolio URL for the given username. */
+export function spotlightPath(username: string): string {
+  return `${ROUTES.spotlight}/${encodeURIComponent(username)}`;
+}
 
 /**
  * Map an internal page id to a route. For "portfolio-viewer" the caller must
@@ -55,6 +63,10 @@ export function pageIdToPath(page: PageId): string {
       // Shouldn't be reached — viewer routes need a templateId. Fall back
       // to the gallery so the user lands somewhere useful.
       return ROUTES.portfolios;
+    case 'spotlight':
+      // Shouldn't be reached — spotlight routes need a username. Fall back
+      // to home; child components should always use spotlightPath() directly.
+      return ROUTES.home;
   }
 }
 
@@ -76,6 +88,7 @@ export function pathToPageId(pathname: string): PageId {
   if (pathname.startsWith(ROUTES.login)) return 'login';
   if (pathname.startsWith(ROUTES.signup)) return 'signup';
   if (pathname.startsWith(ROUTES.profile)) return 'profile';
+  if (pathname.startsWith(`${ROUTES.spotlight}/`)) return 'spotlight';
   if (/^\/portfolios\/[^/]+/.test(pathname)) return 'portfolio-viewer';
   if (pathname.startsWith(ROUTES.portfolios)) return 'portfolios';
   return 'home';
