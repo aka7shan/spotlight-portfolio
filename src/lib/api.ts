@@ -92,8 +92,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     Accept: 'application/json',
   };
 
-  if (body !== undefined) {
+  // Body handling has two paths:
+  //   - FormData      → let fetch set the multipart Content-Type with the
+  //                     boundary string. If we set it ourselves the upload
+  //                     becomes unparseable on the server.
+  //   - anything else → JSON.stringify and declare Content-Type.
+  let serializedBody: BodyInit | undefined;
+  if (body instanceof FormData) {
+    serializedBody = body;
+  } else if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
+    serializedBody = JSON.stringify(body);
   }
 
   if (!anonymous) {
@@ -101,7 +110,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const serializedBody = body !== undefined ? JSON.stringify(body) : undefined;
   const url = `${config.apiUrl}${path}`;
 
   let lastError: unknown = null;
@@ -187,6 +195,10 @@ export interface MeResponse {
   };
 }
 
+export interface AvatarUploadResponse extends MeResponse {
+  avatarUrl: string;
+}
+
 export const api = {
   health: () => request<{ status: string }>('/health', { anonymous: true }),
 
@@ -194,5 +206,25 @@ export const api = {
     get: () => request<MeResponse>('/v1/me'),
     update: (payload: Partial<User>) =>
       request<MeResponse>('/v1/me', { method: 'PUT', body: payload }),
+
+    /**
+     * Upload a new avatar. The backend writes it to Supabase Storage and
+     * atomically updates profiles.avatar_url. The resolved response carries
+     * the full assembled User (so callers can swap their local copy in one
+     * shot) plus the standalone avatarUrl for components that only want
+     * that.
+     */
+    uploadAvatar: (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return request<AvatarUploadResponse>('/v1/me/avatar', {
+        method: 'POST',
+        body: form,
+      });
+    },
+
+    /** Remove the current avatar from Storage AND clear the DB field. */
+    removeAvatar: () =>
+      request<MeResponse>('/v1/me/avatar', { method: 'DELETE' }),
   },
 };
