@@ -10,7 +10,7 @@ This repo is the **frontend only** (`github.com/aka7shan/spotlight-portfolio`).
 The API lives in a **sibling folder** on disk (separate Git repo):
 
 ```
-OneDrive - AMDOCS/
+Project
 ├── spotlight-portfolio/    ← this repo (frontend)
 └── Spotlight-backend/      ← backend API (push to its own GitHub repo)
 ```
