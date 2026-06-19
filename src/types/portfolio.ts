@@ -24,6 +24,17 @@ export interface User {
   about?: string;
   avatar?: string;
   coverImage?: string; // New: Cover image for profile header
+  /**
+   * Free-text current compensation (e.g. "INR 15L (Annually)").
+   * Surfaced on the profile sidebar; format-agnostic so users can write
+   * whatever they want ("$120k base + 20% bonus", "Negotiable", …).
+   */
+  salary?: string;
+  /**
+   * Free-text notice period (e.g. "30 days", "Immediate", "2 months").
+   * Also format-agnostic.
+   */
+  noticePeriod?: string;
   skills?: string[];
   experience?: Experience[];
   education?: Education[];
@@ -54,6 +65,29 @@ export interface SocialLinks {
   behance?: string;
 }
 
+/**
+ * Constrained employment types. Wire shape uses spaces / PascalCase so
+ * the value renders directly in the UI; the backend maps to a snake_case
+ * Postgres enum on write. Keep in sync with `EMPLOYMENT_TYPE_VALUES` in
+ * the backend's `schemas/profile.ts`.
+ */
+export type EmploymentType =
+  | 'Full time'
+  | 'Part time'
+  | 'Contract'
+  | 'Internship'
+  | 'Freelance'
+  | 'Temporary';
+
+export const EMPLOYMENT_TYPE_VALUES: readonly EmploymentType[] = [
+  'Full time',
+  'Part time',
+  'Contract',
+  'Internship',
+  'Freelance',
+  'Temporary',
+] as const;
+
 export interface Experience {
   position: string;
   company: string;
@@ -63,6 +97,10 @@ export interface Experience {
   description: string;
   location?: string;
   skills?: string[];
+  /** Free-text industry/sector ("Banking", "Healthcare"). */
+  industry?: string;
+  /** Employment type — constrained to `EmploymentType`. */
+  employmentType?: EmploymentType;
 }
 
 export interface Education {

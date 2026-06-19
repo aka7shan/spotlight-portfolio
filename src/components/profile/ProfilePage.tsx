@@ -1,41 +1,37 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { UnsavedChangesDialog } from "../common/UnsavedChangesDialog";
-import { ProfileHeader } from "./ProfileHeader";
-import { ShortLinkCard } from "./ShortLinkCard";
-import { ProfileTab } from "./ProfileTab";
+import { ProfileSidebar } from "./ProfileSidebar";
+import { ProfileActionRail } from "./ProfileActionRail";
+import { SectionNav } from "./SectionNav";
+import { PROFILE_SECTIONS } from "./sectionDefinitions";
 import { ExperienceTab } from "./ExperienceTab";
 import { EducationTab } from "./EducationTab";
 import { CertificationsTab } from "./CertificationsTab";
 import { AchievementsTab } from "./AchievementsTab";
 import { LanguagesTab } from "./LanguagesTab";
 import {
+  PersonalDetailsSection,
+  ProjectsSection,
+  SkillsSection,
+  SummarySection,
+} from "./ProfileSections";
+import { useScrollSpy } from "../../hooks/useScrollSpy";
+import {
   validateUserForSave,
   getProfileCompleteness,
 } from "../../lib/validators/user";
 import type { User } from "../../types/portfolio";
-import { 
-  Save, 
-  AlertTriangle,
-  CheckCircle,
-  User as UserIcon,
-  Briefcase,
-  GraduationCap,
-  Award,
-  Trophy,
-  Languages,
-  Eye,
-  Sparkles
-} from "lucide-react";
 
 interface ProfilePageProps {
   user: User;
   onNavigate: (page: string) => void;
-  onUpdateProfile: (user: User) => void;
+  /**
+   * Persists the full user. Resolves `true` on success, `false` on
+   * failure (the parent toasts the error). The page uses the result to
+   * decide whether to baseline the form as "saved".
+   */
+  onUpdateProfile: (user: User) => Promise<boolean>;
   onProfileChange: (sections: string[]) => void;
   /**
    * Notified when avatar/cover (or any field persisted by a dedicated
@@ -48,6 +44,24 @@ interface ProfilePageProps {
   changedSections: string[];
 }
 
+// Scroll-spy "active line" offset: a section counts as active once its
+// title crosses below this point. Kept >= the sections' scroll-mt so a
+// section clicked from the nav registers as active immediately.
+const STICKY_OFFSET_PX = 144;
+
+// Map a validation error tab id (from validators/user.ts) to the
+// matching section id. Used by the Save handler to scroll the right
+// column to the first offending field on validation failure.
+const VALIDATION_TAB_TO_SECTION: Record<string, string> = {
+  profile: "section-personal",
+  projects: "section-projects",
+  experience: "section-experience",
+  education: "section-education",
+  certifications: "section-certifications",
+  achievements: "section-achievements",
+  languages: "section-languages",
+};
+
 export function ProfilePage({
   user,
   onNavigate,
@@ -55,30 +69,25 @@ export function ProfilePage({
   onProfileChange,
   onUserPersisted,
   hasUnsavedChanges,
-  changedSections
+  changedSections,
 }: ProfilePageProps) {
   const [formData, setFormData] = useState<User>(user);
-  const [activeTab, setActiveTab] = useState("profile");
   const [originalData, setOriginalData] = useState<User>(user);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  // True while a PUT /v1/me is in flight. Drives the Save button's
+  // spinner/disabled state and blocks the Ctrl+S shortcut from firing
+  // a second concurrent save.
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Ref to expose save function to parent
-  const saveRef = useRef<(() => void) | null>(null);
-
-  // Tracks the user.id we last initialized form state from. Used by the
-  // sync effect below to decide between "full reset" and "no-op": when the
-  // identity is the same, the parent's `user` prop may have refreshed (e.g.
-  // a sibling component bumped the useProfile cache after an avatar
-  // upload), but our local formData might already be ahead of `user` for
-  // in-flight typing — we mustn't clobber those edits.
+  // Holds the latest `handleSave` so the keyboard shortcut effect can
+  // call it without re-binding the listener on every render.
+  const saveRef = useRef<(() => void | Promise<boolean>) | null>(null);
   const lastSyncedUserIdRef = useRef<string | null>(null);
 
   // Sync from parent only when the user *identity* changes — i.e. on
-  // first mount, or after logout + login as a different user. In-session
-  // refreshes of the same user (e.g. cache bump after a persisted avatar
-  // upload) are handled surgically by `handleUserPersisted` below so that
-  // unrelated in-flight form edits are preserved.
+  // first mount, or after logout + login as a different user. See
+  // pre-refactor comments for the dirty-flag rationale.
   useEffect(() => {
     if (lastSyncedUserIdRef.current !== user.id) {
       setFormData(user);
@@ -88,71 +97,49 @@ export function ProfilePage({
   }, [user]);
 
   /**
-   * Called by ProfileHeader (which receives it from AvatarUpload /
-   * CoverUpload) after a successful upload or remove. The image has
-   * already been persisted server-side; this handler:
-   *
-   *   1. Updates `formData.{avatar,coverImage}` so the UI shows the new
-   *      URL immediately.
-   *   2. Updates `originalData.{avatar,coverImage}` to match — this is
-   *      what stops the diff check on lines ~85-93 from flagging
-   *      "Personal Information" as unsaved. The fields are clean because
-   *      they were just saved by their own endpoint.
-   *   3. Bubbles the full assembled user up to App so the shared
-   *      useProfile cache (and any consumer like the navbar) sees the
-   *      change without a full reload.
-   *
-   * Crucially we only touch avatar + coverImage on both copies — never
-   * the whole user — so any in-flight edits to other fields (name, email,
-   * about, …) survive. The full-form save flow is unaffected.
+   * Called by the sidebar's `ProfileSummaryCard` (which receives it from
+   * `AvatarUpload`) and the CVManager. Same surgical-merge contract as
+   * before: only update the fields persisted by their own endpoints, on
+   * BOTH halves of the dirty-flag check, so unrelated in-flight edits
+   * survive and the form doesn't show "dirty" for an already-persisted
+   * upload.
    */
-  const handleUserPersisted = useCallback((updatedUser: User) => {
-    // Surgical merge — only the fields persisted by their own
-    // endpoints. CV-related fields (`cv`) are included because the
-    // CV upload/delete routes commit them directly to the DB just
-    // like avatar/cover do, so they must move on both sides
-    // (formData AND originalData) to keep the dirty-flag honest.
-    setFormData((prev) => ({
-      ...prev,
-      avatar: updatedUser.avatar,
-      coverImage: updatedUser.coverImage,
-      cv: updatedUser.cv,
-    }));
-    setOriginalData((prev) => ({
-      ...prev,
-      avatar: updatedUser.avatar,
-      coverImage: updatedUser.coverImage,
-      cv: updatedUser.cv,
-    }));
-    onUserPersisted(updatedUser);
-  }, [onUserPersisted]);
+  const handleUserPersisted = useCallback(
+    (updatedUser: User) => {
+      setFormData((prev) => ({
+        ...prev,
+        avatar: updatedUser.avatar,
+        coverImage: updatedUser.coverImage,
+        cv: updatedUser.cv,
+      }));
+      setOriginalData((prev) => ({
+        ...prev,
+        avatar: updatedUser.avatar,
+        coverImage: updatedUser.coverImage,
+        cv: updatedUser.cv,
+      }));
+      onUserPersisted(updatedUser);
+    },
+    [onUserPersisted],
+  );
 
   /**
-   * Merge the accepted output of an AI CV parse into the form. Unlike
-   * `handleUserPersisted`, this is *meant* to flag the form as dirty
-   * — the user reviews the diff, taps Apply, and then has to click
-   * Save Changes to actually persist. So we only touch `formData`,
-   * leaving `originalData` alone so the change-detector picks it up.
+   * Merge accepted CV-parse output into the form. Touches only
+   * `formData` so the change-detector flags the diff and the user
+   * has to hit Save to persist.
    */
   const handleApplyExtracted = useCallback((partial: Partial<User>) => {
     setFormData((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // Profile completeness is computed from a single source of truth so the
-  // progress bar here, the "View Templates" gate, and PortfolioGallery's
-  // "Use This Template" button can never disagree. See validators/user.ts.
   const { percent: profileCompleteness, missingFields } = useMemo(
     () => getProfileCompleteness(formData),
     [formData],
   );
 
-  // Change detection. Short-circuits on referential identity first (very
-  // common: formData and originalData share array references until something
-  // is edited), then falls back to a single JSON serialization per section.
-  //
-  // Old impl ran 7 × `JSON.stringify` on every keystroke — for users with 30+
-  // experience entries that was real CPU. The referential check makes the
-  // common "haven't touched section X yet" path near-free.
+  // Change detection — same algorithm as before the refactor: ref-equal
+  // short-circuit + per-section JSON compare. Mostly verbatim because
+  // the wire fields haven't changed.
   const detectedChanges = useMemo(() => {
     const changes: string[] = [];
 
@@ -164,26 +151,26 @@ export function ProfilePage({
       formData.location !== originalData.location ||
       formData.about !== originalData.about ||
       formData.avatar !== originalData.avatar ||
-      formData.coverImage !== originalData.coverImage;
-    if (personalChanged) changes.push('Personal Information');
+      formData.coverImage !== originalData.coverImage ||
+      formData.salary !== originalData.salary ||
+      formData.noticePeriod !== originalData.noticePeriod;
+    if (personalChanged) changes.push("Personal Information");
 
     const sections: Array<{ key: keyof User; label: string }> = [
-      { key: 'skills', label: 'Skills' },
-      { key: 'projects', label: 'Projects' },
-      { key: 'experience', label: 'Experience' },
-      { key: 'education', label: 'Education' },
-      { key: 'certifications', label: 'Certifications' },
-      { key: 'achievements', label: 'Achievements' },
-      { key: 'languages', label: 'Languages' },
-      { key: 'cv', label: 'CV/Resume' },
+      { key: "skills", label: "Skills" },
+      { key: "projects", label: "Projects" },
+      { key: "experience", label: "Experience" },
+      { key: "education", label: "Education" },
+      { key: "certifications", label: "Certifications" },
+      { key: "achievements", label: "Achievements" },
+      { key: "languages", label: "Languages" },
+      { key: "cv", label: "CV/Resume" },
+      { key: "socialLinks", label: "Social Links" },
     ];
     for (const { key, label } of sections) {
       const next = formData[key];
       const prev = originalData[key];
       if (next === prev) continue; // ref-equal → unchanged
-      // Different refs but possibly equal content (e.g. user typed then
-      // reverted): fall back to structural compare. Stringify is fine here
-      // because we know the values differ by reference.
       if (JSON.stringify(next ?? null) !== JSON.stringify(prev ?? null)) {
         changes.push(label);
       }
@@ -192,45 +179,38 @@ export function ProfilePage({
     return changes;
   }, [formData, originalData]);
 
-  // Only call onProfileChange when changes actually occur
   useEffect(() => {
     onProfileChange(detectedChanges);
   }, [detectedChanges, onProfileChange]);
 
   const handleInputChange = useCallback((field: keyof User, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  /**
-   * Try to persist the current form. Required-fields are checked against the
-   * same policy the backend enforces (see `src/lib/validators/user.ts`). If
-   * anything is missing we:
-   *   1. Switch to the first offending tab so the user sees the relevant inputs.
-   *   2. Surface every error as a toast.
-   *   3. Return `false` and skip the network call.
-   *
-   * Returns `true` when the save was actually dispatched.
-   */
-  const handleSave = useCallback((): boolean => {
+  // ---------------------------------------------------------------------
+  // Scroll-spy + jump
+  // ---------------------------------------------------------------------
+
+  const sectionIds = useMemo(() => PROFILE_SECTIONS.map((s) => s.id), []);
+  const activeSectionId = useScrollSpy(sectionIds, { offset: STICKY_OFFSET_PX });
+
+  const scrollToSection = useCallback((sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  // ---------------------------------------------------------------------
+  // Save (with deep-link to broken section)
+  // ---------------------------------------------------------------------
+
+  const handleSave = useCallback(async (): Promise<boolean> => {
     const { ok, errors } = validateUserForSave(formData);
     if (!ok) {
       const firstTab = errors[0]?.tab;
-      // `projects` lives inside the Profile tab in this UI — fall back there.
-      const tabMap: Record<string, string> = {
-        profile: "profile",
-        projects: "profile",
-        experience: "experience",
-        education: "education",
-        certifications: "certifications",
-        achievements: "achievements",
-        languages: "languages",
-      };
-      if (firstTab && tabMap[firstTab]) {
-        setActiveTab(tabMap[firstTab]);
-      }
+      const sectionId = firstTab ? VALIDATION_TAB_TO_SECTION[firstTab] : null;
+      if (sectionId) scrollToSection(sectionId);
 
-      // Show the first few errors prominently; collapse the rest into a count
-      // so the toast doesn't become a wall of text.
       const head = errors.slice(0, 3).map((e) => `• ${e.message}`).join("\n");
       const more = errors.length > 3 ? `\n…and ${errors.length - 3} more` : "";
       toast.error("Please fix the highlighted fields before saving.", {
@@ -240,76 +220,85 @@ export function ProfilePage({
       return false;
     }
 
-    onUpdateProfile(formData);
-    setOriginalData(formData);
-    return true;
-  }, [formData, onUpdateProfile]);
+    // Capture the snapshot we're persisting so a successful save baselines
+    // against exactly what went over the wire — not whatever the user may
+    // have typed while the request was in flight.
+    const snapshot = formData;
+    setIsSaving(true);
+    try {
+      const saved = await onUpdateProfile(snapshot);
+      // CRITICAL: only baseline `originalData` on SUCCESS. The previous
+      // implementation did this optimistically, so a failed save still
+      // cleared the dirty flag and silently dropped the user's changes.
+      if (saved) setOriginalData(snapshot);
+      return saved;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [formData, onUpdateProfile, scrollToSection]);
 
-  // Expose save function via ref
   useEffect(() => {
     saveRef.current = handleSave;
   }, [handleSave]);
 
-  const handleNavigationRequest = useCallback((destination: string) => {
-    if (hasUnsavedChanges) {
-      setPendingNavigation(destination);
-      setShowUnsavedDialog(true);
-    } else {
-      if (destination.includes('Tab')) {
-        // Handle tab navigation
-        const tabMap: Record<string, string> = {
-          'Profile Tab': 'profile',
-          'Experience Tab': 'experience', 
-          'Education Tab': 'education',
-          'Certifications Tab': 'certifications',
-          'Achievements Tab': 'achievements',
-          'Languages Tab': 'languages'
+  // Cmd/Ctrl+S saves without leaving the keyboard. We guard on
+  // `hasUnsavedChanges` so the shortcut is a no-op on a clean form, and
+  // call through the ref so this listener binds once.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (hasUnsavedChanges) void saveRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hasUnsavedChanges]);
+
+  // ---------------------------------------------------------------------
+  // Unsaved-changes dance (now only triggered by external page-level
+  // navigation requests — section jumps are intra-page and never lose
+  // form state).
+  // ---------------------------------------------------------------------
+
+  const handleNavigationRequest = useCallback(
+    (destination: string) => {
+      // `Tab` strings used to denote intra-Tabs navigation. The new
+      // layout doesn't have tabs, so we short-circuit those: any
+      // legacy " Tab"-suffixed string is now a scrollTo into the
+      // matching section, no dialog needed.
+      if (destination.endsWith(" Tab")) {
+        const map: Record<string, string> = {
+          "Profile Tab": "section-personal",
+          "Experience Tab": "section-experience",
+          "Education Tab": "section-education",
+          "Certifications Tab": "section-certifications",
+          "Achievements Tab": "section-achievements",
+          "Languages Tab": "section-languages",
         };
-        setActiveTab(tabMap[destination] || destination);
+        const sectionId = map[destination];
+        if (sectionId) scrollToSection(sectionId);
+        return;
+      }
+
+      if (hasUnsavedChanges) {
+        setPendingNavigation(destination);
+        setShowUnsavedDialog(true);
       } else {
-        // Handle page navigation
         onNavigate(destination);
       }
-    }
-  }, [hasUnsavedChanges, onNavigate]);
+    },
+    [hasUnsavedChanges, onNavigate, scrollToSection],
+  );
 
-  const handleTabChange = useCallback((newTab: string) => {
-    const tabLabels: Record<string, string> = {
-      profile: 'Profile Tab',
-      experience: 'Experience Tab',
-      education: 'Education Tab', 
-      certifications: 'Certifications Tab',
-      achievements: 'Achievements Tab',
-      languages: 'Languages Tab'
-    };
-    
-    handleNavigationRequest(tabLabels[newTab] || newTab);
-  }, [handleNavigationRequest]);
-
-  const handleDialogSave = useCallback(() => {
-    // If validation fails inside `handleSave`, keep the user on the profile
-    // page so they can fix the errors instead of silently navigating away.
-    const saved = handleSave();
-    if (!saved) {
-      setShowUnsavedDialog(false);
-      return;
-    }
+  const handleDialogSave = useCallback(async () => {
+    const saved = await handleSave();
     setShowUnsavedDialog(false);
-
-    if (pendingNavigation) {
-      if (pendingNavigation.includes('Tab')) {
-        const tabMap: Record<string, string> = {
-          'Profile Tab': 'profile',
-          'Experience Tab': 'experience',
-          'Education Tab': 'education',
-          'Certifications Tab': 'certifications',
-          'Achievements Tab': 'achievements',
-          'Languages Tab': 'languages'
-        };
-        setActiveTab(tabMap[pendingNavigation] || pendingNavigation);
-      } else {
-        onNavigate(pendingNavigation);
-      }
+    // Only proceed with the queued navigation if the save actually
+    // succeeded — otherwise keep the user on the page with their
+    // changes intact so they can retry.
+    if (saved && pendingNavigation) {
+      onNavigate(pendingNavigation);
       setPendingNavigation(null);
     }
   }, [handleSave, pendingNavigation, onNavigate]);
@@ -317,21 +306,9 @@ export function ProfilePage({
   const handleDialogDiscard = useCallback(() => {
     setFormData(originalData);
     setShowUnsavedDialog(false);
-    
+
     if (pendingNavigation) {
-      if (pendingNavigation.includes('Tab')) {
-        const tabMap: Record<string, string> = {
-          'Profile Tab': 'profile', 
-          'Experience Tab': 'experience',
-          'Education Tab': 'education',
-          'Certifications Tab': 'certifications', 
-          'Achievements Tab': 'achievements',
-          'Languages Tab': 'languages'
-        };
-        setActiveTab(tabMap[pendingNavigation] || pendingNavigation);
-      } else {
-        onNavigate(pendingNavigation);
-      }
+      onNavigate(pendingNavigation);
       setPendingNavigation(null);
     }
   }, [originalData, pendingNavigation, onNavigate]);
@@ -343,221 +320,136 @@ export function ProfilePage({
 
   return (
     <>
-      {/* Fixed spacing container to prevent header overlap */}
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100"> 
-        <div className="pt-16 pb-8">
-          <div className="container mx-auto px-4 max-w-7xl">
-            {/* Profile Header with Hero Design */}
-            <ProfileHeader
-              user={formData}
-              profileCompleteness={profileCompleteness}
-              onUserPersisted={handleUserPersisted}
-              className="mb-8"
-            />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+        <div className="pt-20 pb-12">
+          <div className="max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8">
+            {/*
+              Three-column body.
+                - lg+: identity column | editable sections | action rail
+                - mobile: everything stacks (see `order-last` below)
+              `items-start` on the grid is needed for `lg:sticky` to
+              behave on the side columns (sticky only works when the
+              element is not a stretched flex/grid item).
+            */}
+            <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)_380px] gap-6 items-start">
+              {/* LEFT — identity: name, contact, social links. */}
+              <ProfileSidebar
+                user={formData}
+                onUserPersisted={handleUserPersisted}
+                onJumpToSection={scrollToSection}
+                handleInputChange={handleInputChange}
+                className="lg:sticky lg:top-16"
+              />
 
-            {/* Action Bar */}
-            <div className="sticky top-16 z-40 bg-white/80 backdrop-blur-lg border border-gray-200 rounded-xl shadow-lg mb-8 p-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-xl font-semibold text-gray-900">Portfolio Builder</h2>
-                  </div>
-                  {hasUnsavedChanges && (
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                      <AlertTriangle className="w-3 h-3 mr-1" />
-                      Unsaved Changes
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  {profileCompleteness === 100 && (
-                    <Button 
-                      onClick={() => handleNavigationRequest('portfolios')} 
-                      variant="outline"
-                      className="flex items-center gap-2 border-green-200 text-green-700 hover:bg-green-50"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View Templates
-                    </Button>
-                  )}
-                  <Button
-                    onClick={handleSave}
-                    disabled={!hasUnsavedChanges}
-                    title={hasUnsavedChanges ? undefined : "No changes to save"}
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </Button>
+              {/* MIDDLE — the editable sections. `order-last` drops it
+                  below the identity + action columns on mobile so the
+                  Save controls stay reachable near the top there. */}
+              <div className="order-last lg:order-none">
+                {/* Sticky section nav. Pins just under the global navbar
+                    now that the full-width action bar is gone. */}
+                <SectionNav
+                  activeId={activeSectionId}
+                  className="sticky top-16 z-30"
+                />
+
+                <div className="mt-6 space-y-10">
+                  <section id="section-summary" className="scroll-mt-32">
+                    <SummarySection
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-personal" className="scroll-mt-32">
+                    <PersonalDetailsSection
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-experience" className="scroll-mt-32">
+                    <ExperienceTab
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-education" className="scroll-mt-32">
+                    <EducationTab
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-skills" className="scroll-mt-32">
+                    <SkillsSection
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-projects" className="scroll-mt-32">
+                    <ProjectsSection
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-certifications" className="scroll-mt-32">
+                    <CertificationsTab
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-achievements" className="scroll-mt-32">
+                    <AchievementsTab
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
+
+                  <section id="section-languages" className="scroll-mt-32">
+                    <LanguagesTab
+                      formData={formData}
+                      handleInputChange={handleInputChange}
+                    />
+                  </section>
                 </div>
               </div>
-            </div>
 
-            {/* Short-link card (Phase 1.2).
-                Lives outside the Tabs/Save flow because regenerate has
-                its own dedicated endpoint with atomic semantics. We
-                patch both halves of the change-detector when the code
-                rotates so the Save button doesn't think the form is
-                dirty. */}
-            {formData.shortCode && (
-              <ShortLinkCard
+              {/* RIGHT — action rail: everything that acts on the profile
+                  (save, score, templates, share link, CV). */}
+              <ProfileActionRail
+                hasUnsavedChanges={hasUnsavedChanges}
+                isSaving={isSaving}
+                onSave={handleSave}
+                profileCompleteness={profileCompleteness}
+                missingFields={missingFields}
+                onJumpToSection={scrollToSection}
                 shortCode={formData.shortCode}
                 onShortCodeChanged={(newCode) => {
                   setFormData((prev) => ({ ...prev, shortCode: newCode }));
                   setOriginalData((prev) => ({ ...prev, shortCode: newCode }));
                 }}
+                onViewTemplates={() => handleNavigationRequest("portfolios")}
+                currentUser={formData}
+                onUserPersisted={handleUserPersisted}
+                onApplyExtracted={handleApplyExtracted}
+                className="lg:sticky lg:top-16"
               />
-            )}
-
-            {/* Progress Card */}
-            {missingFields.length > 0 && (
-              <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-orange-50 to-yellow-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-orange-900">
-                    <CheckCircle className="w-5 h-5" />
-                    Complete Your Profile
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="w-full bg-orange-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-orange-500 to-yellow-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${profileCompleteness}%` }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm text-orange-800 mb-2">Missing information to unlock all features:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {missingFields.map((field, index) => (
-                          <Badge key={index} variant="outline" className="text-orange-700 border-orange-300 bg-orange-100">
-                            {field}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Main Content Tabs */}
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-sm">
-              <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <div className="border-b border-gray-200 bg-white/50 rounded-t-lg">
-                  <TabsList className="grid w-full grid-cols-6 bg-transparent p-1">
-                    <TabsTrigger 
-                      value="profile" 
-                      className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-                    >
-                      <UserIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline">Profile</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="experience" 
-                      className="flex items-center gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white"
-                    >
-                      <Briefcase className="w-4 h-4" />
-                      <span className="hidden sm:inline">Experience</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="education" 
-                      className="flex items-center gap-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white"
-                    >
-                      <GraduationCap className="w-4 h-4" />
-                      <span className="hidden sm:inline">Education</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="certifications" 
-                      className="flex items-center gap-2 data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
-                    >
-                      <Award className="w-4 h-4" />
-                      <span className="hidden sm:inline">Certs</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="achievements" 
-                      className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white"
-                    >
-                      <Trophy className="w-4 h-4" />
-                      <span className="hidden sm:inline">Awards</span>
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="languages" 
-                      className="flex items-center gap-2 data-[state=active]:bg-indigo-500 data-[state=active]:text-white"
-                    >
-                      <Languages className="w-4 h-4" />
-                      <span className="hidden sm:inline">Languages</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <div className="p-8">
-                  {/* Profile Tab - Using modular component */}
-                  <TabsContent value="profile" className="mt-0">
-                    <ProfileTab
-                      formData={formData}
-                      handleInputChange={handleInputChange}
-                      onUserPersisted={handleUserPersisted}
-                      onApplyExtracted={handleApplyExtracted}
-                    />
-                  </TabsContent>
-
-                  {/* Experience Tab - Using modular component */}
-                  <TabsContent value="experience" className="mt-0">
-                    <ExperienceTab 
-                      formData={formData} 
-                      handleInputChange={handleInputChange} 
-                    />
-                  </TabsContent>
-
-                  {/* Education Tab - Using modular component */}
-                  <TabsContent value="education" className="mt-0">
-                    <EducationTab 
-                      formData={formData} 
-                      handleInputChange={handleInputChange} 
-                    />
-                  </TabsContent>
-
-                  {/* Certifications Tab - Using modular component */}
-                  <TabsContent value="certifications" className="mt-0">
-                    <CertificationsTab 
-                      formData={formData} 
-                      handleInputChange={handleInputChange} 
-                    />
-                  </TabsContent>
-
-                  {/* Achievements Tab - Using modular component */}
-                  <TabsContent value="achievements" className="mt-0">
-                    <AchievementsTab 
-                      formData={formData} 
-                      handleInputChange={handleInputChange} 
-                    />
-                  </TabsContent>
-
-                  {/* Languages Tab - Using modular component */}
-                  <TabsContent value="languages" className="mt-0">
-                    <LanguagesTab 
-                      formData={formData} 
-                      handleInputChange={handleInputChange} 
-                    />
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </Card>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Local Unsaved Changes Dialog for tab navigation */}
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
         onClose={handleDialogClose}
         onSave={handleDialogSave}
         onDiscard={handleDialogDiscard}
         changedSections={changedSections}
-        targetDestination={pendingNavigation || ''}
+        targetDestination={pendingNavigation || ""}
       />
     </>
   );

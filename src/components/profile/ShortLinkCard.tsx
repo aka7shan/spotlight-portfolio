@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,38 +105,38 @@ export function ShortLinkCard({ shortCode, onShortCodeChanged }: ShortLinkCardPr
   }, [onShortCodeChanged]);
 
   return (
-    <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-900">
-          <Globe className="w-5 h-5" />
-          Your shareable portfolio link
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs text-blue-700 mb-1 font-medium uppercase tracking-wide">
-              Live at
-            </p>
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-base font-mono text-blue-900 hover:text-blue-700 break-all underline-offset-2 hover:underline"
-            >
-              {publicUrl}
-            </a>
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <Button onClick={handleCopy} size="sm" variant="secondary">
+    <Card className="border-0 shadow-sm">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-2 text-gray-900 mb-3">
+          <Globe className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-semibold">Shareable link</h3>
+        </div>
+
+        <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+          <p className="text-[10px] text-gray-500 mb-1 font-medium uppercase tracking-wide">
+            Live at
+          </p>
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-mono text-blue-700 hover:text-blue-900 break-all underline-offset-2 hover:underline"
+          >
+            {publicUrl}
+          </a>
+
+          {/* Buttons stack in a 3-up grid so they stay tappable in the
+              narrow sidebar without wrapping awkwardly. */}
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <Button onClick={handleCopy} size="sm" variant="secondary" className="px-2">
               {justCopied ? (
                 <>
-                  <Check className="w-4 h-4 mr-1" />
+                  <Check className="w-3.5 h-3.5 mr-1" />
                   Copied
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4 mr-1" />
+                  <Copy className="w-3.5 h-3.5 mr-1" />
                   Copy
                 </>
               )}
@@ -145,22 +145,23 @@ export function ShortLinkCard({ shortCode, onShortCodeChanged }: ShortLinkCardPr
               size="sm"
               variant="outline"
               asChild
+              className="px-2"
               title="Open this portfolio in a new tab"
             >
               <a href={publicUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-1" />
+                <ExternalLink className="w-3.5 h-3.5 mr-1" />
                 Open
               </a>
             </Button>
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="ghost" disabled={isRegenerating}>
+                <Button size="sm" variant="ghost" disabled={isRegenerating} className="px-2">
                   {isRegenerating ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                   ) : (
-                    <RefreshCw className="w-4 h-4 mr-1" />
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
                   )}
-                  New link
+                  New
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -198,11 +199,9 @@ export function ShortLinkCard({ shortCode, onShortCodeChanged }: ShortLinkCardPr
           </div>
         </div>
 
-        <p className="text-xs text-blue-900/70 mt-3">
-          Each portfolio gets a permanent random link. Choose which template
-          renders here from the{" "}
-          <span className="font-medium">Templates</span> page — the "Set as
-          Public" button on any template card swaps what visitors see.
+        <p className="text-[11px] text-gray-500 mt-3 leading-snug">
+          Permanent random link. Pick which template renders from the{" "}
+          <span className="font-medium">Templates</span> page.
         </p>
       </CardContent>
     </Card>

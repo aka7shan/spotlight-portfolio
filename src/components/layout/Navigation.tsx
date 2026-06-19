@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "../ui/dropdown-menu";
-import { Palette, Menu, X, User as UserIcon, LogOut } from "lucide-react";
+import { Palette, Menu, X, User as UserIcon, LogOut, ChevronDown } from "lucide-react";
 import { ImageWithFallback } from "../common/ImageWithFallback";
 import type { User } from "../../types/portfolio";
 import styles from "./Navigation.module.css";
@@ -78,9 +78,19 @@ export function Navigation({
     setIsDropdownOpen(open);
   }, []);
 
+  // First word of a display name, truncated so the dropdown trigger never
+  // overflows. "Akarshan Sharma" → "Akarshan"; long single-token names like
+  // "Bartholomew" → "Bartholom" (so the trailing "..." reads naturally).
+  const firstName = (name: string | undefined): string => {
+    const raw = (name ?? '').trim();
+    if (!raw) return 'there';
+    const first = raw.split(/\s+/)[0];
+    return first.length > 10 ? `${first.slice(0, 8)}` : first;
+  };
+
   return (
     <nav className={styles.navBar}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div
@@ -119,46 +129,64 @@ export function Navigation({
               // Authenticated User Menu
               <DropdownMenu open={isDropdownOpen} onOpenChange={handleDropdownOpenChange}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  {/*
+                    The trigger is the avatar + a "Hi, <firstName>..." pill on
+                    md+. On small screens we just show the avatar to save room.
+                    Wider trigger surface = less tap-fumbling, which matters
+                    because every authenticated entry point lives behind this
+                    menu (profile, logout, future settings).
+                  */}
+                  <Button
+                    variant="ghost"
+                    className="flex h-10 items-center gap-2 rounded-full pl-1 pr-3 hover:bg-gray-100"
+                  >
                     <ImageWithFallback
                       src={user.avatar || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face`}
                       alt={user.name}
-                      className="h-10 w-10 rounded-full object-cover"
+                      className="h-8 w-8 rounded-full object-cover"
                     />
+                    <span className="hidden md:inline text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                      Hi, {firstName(user.name)}...
+                    </span>
+                    <ChevronDown className="hidden md:block w-4 h-4 text-gray-500" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  className="w-56" 
-                  align="end" 
+                <DropdownMenuContent
+                  className="w-60 p-2"
+                  align="end"
                   forceMount
-                  sideOffset={5}
+                  sideOffset={8}
                   onCloseAutoFocus={(e) => {
                     // Prevent focus trap and allow normal scrolling
                     e.preventDefault();
                   }}
                 >
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{user.name}</p>
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {user.email}
-                      </p>
-                      {user.title && (
-                        <p className="w-[200px] truncate text-xs text-muted-foreground">
-                          {user.title}
-                        </p>
-                      )}
-                    </div>
+                  <div className="px-2 pt-1 pb-2">
+                    <p className="text-sm font-semibold text-gray-900">
+                      Hi, {firstName(user.name)}...
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user.email}
+                    </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleProfileClick}>
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                  <DropdownMenuItem
+                    onClick={handleProfileClick}
+                    className="gap-3 px-3 py-2.5 rounded-md cursor-pointer focus:bg-gray-100"
+                  >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100">
+                      <UserIcon className="h-4 w-4 text-gray-700" />
+                    </div>
+                    <span className="text-sm font-medium">View Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogoutClick} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
+                  <DropdownMenuItem
+                    onClick={handleLogoutClick}
+                    className="gap-3 px-3 py-2.5 rounded-md cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700"
+                  >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50">
+                      <LogOut className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-medium">Logout</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

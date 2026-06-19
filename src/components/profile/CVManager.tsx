@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription } from "../ui/alert";
 import {
@@ -248,13 +248,12 @@ export function CVManager({
 
   return (
     <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          CV / Resume
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center gap-2 text-gray-900">
+          <FileText className="w-4 h-4 text-purple-600" />
+          <h3 className="text-sm font-semibold">CV / Resume</h3>
+        </div>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -271,57 +270,44 @@ export function CVManager({
         )}
 
         {cvData ? (
-          <div className="space-y-4">
-            <div className="flex items-start justify-between p-4 border rounded-lg bg-green-50 border-green-200">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <FileCheck className="w-5 h-5 text-green-600" />
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 p-3 border rounded-lg bg-green-50 border-green-200">
+              <div className="p-2 bg-green-100 rounded-lg shrink-0">
+                <FileCheck className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h4 className="font-medium text-green-900 break-all text-sm">
+                    {cvData.fileName}
+                  </h4>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-100 text-green-700"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Uploaded
+                  </Badge>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-green-900 break-all">
-                      {cvData.fileName}
-                    </h4>
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-100 text-green-700"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Uploaded
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm text-green-700">
-                    <div className="flex items-center gap-4 flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(cvData.uploadDate)}
-                      </span>
-                      <span>{formatFileSize(cvData.fileSize)}</span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 flex-wrap text-xs text-green-700">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {formatDate(cvData.uploadDate)}
+                  </span>
+                  <span>{formatFileSize(cvData.fileSize)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleParse}
-                disabled={isParsing || isUploading || isRemoving}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                {isParsing ? "Reading your CV…" : "Auto-fill from CV"}
-              </Button>
+            <Button
+              onClick={handleParse}
+              disabled={isParsing || isUploading || isRemoving}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              {isParsing ? "Reading your CV…" : "Auto-fill from CV"}
+            </Button>
 
-              {signedUrl && (
-                <Button asChild variant="outline" size="default">
-                  <a href={signedUrl} target="_blank" rel="noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View file
-                  </a>
-                </Button>
-              )}
-
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={handleUploadClick}
                 variant="outline"
@@ -341,24 +327,33 @@ export function CVManager({
                 {isRemoving ? "Removing…" : "Remove"}
               </Button>
             </div>
+
+            {signedUrl && (
+              <Button asChild variant="ghost" size="sm" className="w-full">
+                <a href={signedUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View file
+                </a>
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <div className="flex flex-col items-center gap-4">
-              <div className="p-4 bg-muted rounded-full">
-                <FileText className="w-8 h-8 text-muted-foreground" />
+          <div className="text-center py-6">
+            <div className="flex flex-col items-center gap-3">
+              <div className="p-3 bg-muted rounded-full">
+                <FileText className="w-6 h-6 text-muted-foreground" />
               </div>
               <div>
-                <h4 className="font-medium mb-2">No CV uploaded yet</h4>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Upload a PDF or DOCX. We can auto-fill your profile from
-                  it using AI.
+                <h4 className="font-medium text-sm mb-1">No CV uploaded yet</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Upload a PDF or DOCX — we can auto-fill your profile from it
+                  using AI.
                 </p>
               </div>
               <Button
                 onClick={handleUploadClick}
                 disabled={isUploading}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 {isUploading ? "Uploading…" : "Upload CV"}

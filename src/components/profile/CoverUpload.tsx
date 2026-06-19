@@ -35,6 +35,18 @@ interface CoverUploadProps {
    * useProfile cache in one shot.
    */
   onCoverPersisted: (user: User) => void;
+  /**
+   * Tailwind height class(es) for the banner. Defaults to the full-height
+   * header treatment; the sidebar summary card passes a shorter value
+   * (e.g. `h-20`) via `compact`.
+   */
+  heightClassName?: string;
+  /**
+   * Compact treatment for tight containers (the sidebar summary card):
+   * a slim banner with a small icon button cluster instead of the large
+   * centered CTA / hover overlay. Pairs with a short `heightClassName`.
+   */
+  compact?: boolean;
   className?: string;
 }
 
@@ -46,6 +58,8 @@ const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif
 export function CoverUpload({
   currentCover,
   onCoverPersisted,
+  heightClassName = "h-48 md:h-64",
+  compact = false,
   className = "",
 }: CoverUploadProps) {
   const [isWorking, setIsWorking] = useState(false);
@@ -147,7 +161,7 @@ export function CoverUpload({
   const displayCover = previewUrl || currentCover;
 
   return (
-    <div className={`relative h-48 md:h-64 overflow-hidden ${className}`}>
+    <div className={`relative ${heightClassName} overflow-hidden ${className}`}>
       <input
         ref={fileInputRef}
         type="file"
@@ -163,30 +177,69 @@ export function CoverUpload({
             alt="Cover"
             className="w-full h-full object-cover"
           />
-          {/* Hover overlay — desktop hover OR persistent on touch via :focus-within. */}
-          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
-            <Button
-              onClick={handleUploadClick}
-              size="sm"
-              variant="secondary"
-              className="bg-white/90 hover:bg-white text-black"
-              disabled={isWorking}
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {isWorking ? "Uploading..." : "Change Cover"}
-            </Button>
-            <Button
-              onClick={handleRemove}
-              size="sm"
-              variant="secondary"
-              className="bg-white/90 hover:bg-white text-red-600"
-              disabled={isWorking}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Remove
-            </Button>
-          </div>
+          {compact ? (
+            // Compact: small icon buttons pinned top-right so they never
+            // collide with the avatar that overlaps the banner.
+            <div className="absolute top-2 right-2 flex gap-1.5">
+              <button
+                type="button"
+                onClick={handleUploadClick}
+                disabled={isWorking}
+                aria-label="Change cover"
+                className="h-7 w-7 rounded-full bg-white/85 hover:bg-white text-gray-700 flex items-center justify-center shadow disabled:opacity-60"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleRemove}
+                disabled={isWorking}
+                aria-label="Remove cover"
+                className="h-7 w-7 rounded-full bg-white/85 hover:bg-white text-red-600 flex items-center justify-center shadow disabled:opacity-60"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            // Hover overlay — desktop hover OR persistent on touch via :focus-within.
+            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+              <Button
+                onClick={handleUploadClick}
+                size="sm"
+                variant="secondary"
+                className="bg-white/90 hover:bg-white text-black"
+                disabled={isWorking}
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                {isWorking ? "Uploading..." : "Change Cover"}
+              </Button>
+              <Button
+                onClick={handleRemove}
+                size="sm"
+                variant="secondary"
+                className="bg-white/90 hover:bg-white text-red-600"
+                disabled={isWorking}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Remove
+              </Button>
+            </div>
+          )}
         </div>
+      ) : compact ? (
+        // Compact empty-state: a slim gradient band that is itself the
+        // upload button. No big CTA — the summary card stays tight.
+        <button
+          type="button"
+          onClick={handleUploadClick}
+          disabled={isWorking}
+          className="w-full h-full bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 flex items-center justify-center group"
+        >
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 group-hover:text-gray-800">
+            <Camera className="w-3.5 h-3.5" />
+            {isWorking ? "Uploading…" : "Add cover"}
+          </span>
+        </button>
       ) : (
         // Empty-state: gradient placeholder + single CTA. Same visual as the
         // legacy FileReader-based implementation so the redesign is a drop-in.

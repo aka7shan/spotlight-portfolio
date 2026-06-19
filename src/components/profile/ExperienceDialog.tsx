@@ -7,12 +7,30 @@ import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
 import { Badge } from "../ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { FormField } from "../ui/form-validation";
 import { EnhancedDatePicker } from "../ui/enhanced-date-picker";
-import type { Experience } from "../../types/portfolio";
+import {
+  EMPLOYMENT_TYPE_VALUES,
+  type EmploymentType,
+  type Experience,
+} from "../../types/portfolio";
 import { CalendarIcon, X, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "../ui/utils";
+
+// Sentinel value used in the SelectItem for "no employment type chosen".
+// Radix's Select rejects an empty-string value, so we render this sentinel
+// in the dropdown and translate it to `undefined` on the way out (and
+// back to the sentinel on the way in). Keeps the data model clean —
+// `undefined` still wins on the wire and in the type.
+const NO_EMPLOYMENT_TYPE = "__none__";
 
 interface ExperienceDialogProps {
   open: boolean;
@@ -31,7 +49,9 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
     isPresent: false,
     description: '',
     location: '',
-    skills: []
+    skills: [],
+    industry: '',
+    employmentType: undefined,
   });
 
   // Update form data when experience prop changes (for edit mode)
@@ -45,7 +65,9 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
         isPresent: experience.isPresent || false,
         description: experience.description || '',
         location: experience.location || '',
-        skills: experience.skills || []
+        skills: experience.skills || [],
+        industry: experience.industry || '',
+        employmentType: experience.employmentType,
       });
     } else {
       // Reset form for add mode
@@ -57,7 +79,9 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
         isPresent: false,
         description: '',
         location: '',
-        skills: []
+        skills: [],
+        industry: '',
+        employmentType: undefined,
       });
     }
   }, [experience, mode, open]);
@@ -142,7 +166,13 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
 
   const handleSave = useCallback(() => {
     if (validateForm()) {
-      onSave(formData);
+      // Strip empty industry on the way out — keep wire payload tidy and
+      // align with "omit means keep" PUT semantics on the backend.
+      const payload: Experience = {
+        ...formData,
+        industry: formData.industry?.trim() ? formData.industry.trim() : undefined,
+      };
+      onSave(payload);
       onClose();
       // Reset form for next use
       setFormData({
@@ -153,7 +183,9 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
         isPresent: false,
         description: '',
         location: '',
-        skills: []
+        skills: [],
+        industry: '',
+        employmentType: undefined,
       });
       setValidationErrors({});
     }
@@ -173,7 +205,9 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
         isPresent: false,
         description: '',
         location: '',
-        skills: []
+        skills: [],
+        industry: '',
+        employmentType: undefined,
       });
     }
   }, [onClose, mode]);
@@ -334,18 +368,63 @@ export function ExperienceDialog({ open, onClose, onSave, mode, experience }: Ex
             />
           </FormField>
 
-          {/* Location (Optional) */}
-          <div>
-            <Label htmlFor="experience-location" className="text-sm font-medium text-gray-700">
-              Location
-            </Label>
-            <Input
-              id="experience-location"
-              value={formData.location || ''}
-              onChange={(e) => handleInputChange('location', e.target.value)}
-              placeholder="e.g. San Francisco, CA"
-              className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-            />
+          {/* Location, Employment Type, Industry (all optional) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="experience-location" className="text-sm font-medium text-gray-700">
+                Location
+              </Label>
+              <Input
+                id="experience-location"
+                value={formData.location || ''}
+                onChange={(e) => handleInputChange('location', e.target.value)}
+                placeholder="e.g. San Francisco, CA"
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="experience-employment-type" className="text-sm font-medium text-gray-700">
+                Employment Type
+              </Label>
+              <Select
+                value={formData.employmentType ?? NO_EMPLOYMENT_TYPE}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    'employmentType',
+                    value === NO_EMPLOYMENT_TYPE ? undefined : (value as EmploymentType),
+                  )
+                }
+              >
+                <SelectTrigger
+                  id="experience-employment-type"
+                  className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_EMPLOYMENT_TYPE}>—</SelectItem>
+                  {EMPLOYMENT_TYPE_VALUES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="experience-industry" className="text-sm font-medium text-gray-700">
+                Industry
+              </Label>
+              <Input
+                id="experience-industry"
+                value={formData.industry || ''}
+                onChange={(e) => handleInputChange('industry', e.target.value)}
+                placeholder="e.g. Banking, Healthcare"
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           {/* Skills (Optional) */}

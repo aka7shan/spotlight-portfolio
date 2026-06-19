@@ -249,15 +249,17 @@ export default function App() {
   }, [signOut]);
 
   const handleUpdateProfile = useCallback(
-    async (updatedUser: User) => {
+    async (updatedUser: User): Promise<boolean> => {
       try {
         await save(updatedUser);
         setHasUnsavedChanges(false);
         setChangedSections([]);
         toast.success("Profile saved");
+        return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to save profile";
         toast.error(message);
+        return false;
       }
     },
     [save],
