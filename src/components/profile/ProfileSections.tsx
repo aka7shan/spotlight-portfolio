@@ -70,8 +70,9 @@ export function SectionHeader({ icon, title, subtitle, actions }: SectionHeaderP
 // 1. Profile summary — `about`
 // ---------------------------------------------------------------------------
 //
-// The Resume (CVManager) used to live here; it now sits in the right
-// action rail so the summary section is just the hero blurb.
+// The Resume/CV upload used to live here; it now sits at the top of the
+// editor column (the onboarding hero for blank profiles, the slim
+// `CvQuickBar` otherwise) so the summary section is just the hero blurb.
 
 interface SummarySectionProps {
   formData: User;

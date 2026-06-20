@@ -223,3 +223,32 @@ export function getProfileCompleteness(user: User): ProfileCompleteness {
 export function isProfileComplete(user: User): boolean {
   return getProfileCompleteness(user).isComplete;
 }
+
+/**
+ * "Blank slate" check that drives the onboarding hero on the profile page.
+ *
+ * Deliberately distinct from `getProfileCompleteness`: a freshly signed-up
+ * user usually already has `name` (and sometimes `title`/`email`) prefilled,
+ * so a completeness-based check would read ~40% and never trigger. Instead we
+ * key off *authored portfolio content* — if none of these are present there's
+ * literally nothing to render on a public page yet, so we surface the
+ * "upload résumé / fill manually" hero. The moment any of them is added
+ * (including via CV auto-fill) the hero collapses.
+ */
+export function isProfileEmpty(user: User): boolean {
+  const hasText = (v?: string): boolean =>
+    typeof v === "string" && v.trim().length > 0;
+  const hasItems = (v?: readonly unknown[]): boolean =>
+    Array.isArray(v) && v.length > 0;
+
+  return (
+    !hasText(user.about) &&
+    !hasItems(user.experience) &&
+    !hasItems(user.skills) &&
+    !hasItems(user.education) &&
+    !hasItems(user.projects) &&
+    !hasItems(user.certifications) &&
+    !hasItems(user.achievements) &&
+    !hasItems(user.languages)
+  );
+}

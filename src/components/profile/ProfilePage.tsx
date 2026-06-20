@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { UnsavedChangesDialog } from "../common/UnsavedChangesDialog";
 import { ProfileSidebar } from "./ProfileSidebar";
 import { ProfileActionRail } from "./ProfileActionRail";
+import { ProfileGettingStarted } from "./ProfileGettingStarted";
+import { CvQuickBar } from "./CvQuickBar";
 import { SectionNav } from "./SectionNav";
 import { PROFILE_SECTIONS } from "./sectionDefinitions";
 import { ExperienceTab } from "./ExperienceTab";
@@ -20,6 +22,7 @@ import { useScrollSpy } from "../../hooks/useScrollSpy";
 import {
   validateUserForSave,
   getProfileCompleteness,
+  isProfileEmpty,
 } from "../../lib/validators/user";
 import type { User } from "../../types/portfolio";
 
@@ -80,6 +83,11 @@ export function ProfilePage({
   // a second concurrent save.
   const [isSaving, setIsSaving] = useState(false);
 
+  // Lets a blank-slate user opt out of the onboarding hero ("Fill it in
+  // manually"). The hero also auto-collapses once the profile gains any
+  // content, so this only matters while the profile is still empty.
+  const [dismissedGettingStarted, setDismissedGettingStarted] = useState(false);
+
   // Holds the latest `handleSave` so the keyboard shortcut effect can
   // call it without re-binding the listener on every render.
   const saveRef = useRef<(() => void | Promise<boolean>) | null>(null);
@@ -98,7 +106,8 @@ export function ProfilePage({
 
   /**
    * Called by the sidebar's `ProfileSummaryCard` (which receives it from
-   * `AvatarUpload`) and the CVManager. Same surgical-merge contract as
+   * `AvatarUpload`) and the CV upload flow (`useCvManager`). Same
+   * surgical-merge contract as
    * before: only update the fields persisted by their own endpoints, on
    * BOTH halves of the dirty-flag check, so unrelated in-flight edits
    * survive and the form doesn't show "dirty" for an already-persisted
@@ -226,6 +235,26 @@ export function ProfilePage({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [manualActiveId]);
+
+  // ---------------------------------------------------------------------
+  // Onboarding hero (blank-slate "Get started")
+  // ---------------------------------------------------------------------
+
+  // Show the two-door hero only while the profile has no authored content
+  // AND the user hasn't opted into manual entry. Auto-collapses the moment
+  // any section gains data (including via CV auto-fill).
+  const showGettingStarted = useMemo(
+    () => isProfileEmpty(formData) && !dismissedGettingStarted,
+    [formData, dismissedGettingStarted],
+  );
+
+  const handleFillManually = useCallback(() => {
+    setDismissedGettingStarted(true);
+    // Defer until the hero unmounts and the editor lays out, then drop the
+    // user at the first section so "start from scratch" feels like an action
+    // rather than a card just vanishing.
+    requestAnimationFrame(() => scrollToSection("section-summary"));
+  }, [scrollToSection]);
 
   // ---------------------------------------------------------------------
   // Save (with deep-link to broken section)
@@ -377,6 +406,27 @@ export function ProfilePage({
                   below the identity + action columns on mobile so the
                   Save controls stay reachable near the top there. */}
               <div className="order-last lg:order-none">
+                {/* Blank-slate users get the two-door onboarding hero;
+                    everyone else gets the slim CV/résumé quick-bar. Both
+                    sit at the very top of the editor column and drive the
+                    same upload → AI auto-fill flow. */}
+                {showGettingStarted ? (
+                  <ProfileGettingStarted
+                    currentUser={formData}
+                    onUserPersisted={handleUserPersisted}
+                    onApplyExtracted={handleApplyExtracted}
+                    onFillManually={handleFillManually}
+                    className="mb-6"
+                  />
+                ) : (
+                  <CvQuickBar
+                    currentUser={formData}
+                    onUserPersisted={handleUserPersisted}
+                    onApplyExtracted={handleApplyExtracted}
+                    className="mb-6"
+                  />
+                )}
+
                 {/* Sticky section nav. Pins just under the global navbar
                     now that the full-width action bar is gone. */}
                 <SectionNav
@@ -467,8 +517,6 @@ export function ProfilePage({
                 }}
                 onViewTemplates={() => handleNavigationRequest("portfolios")}
                 currentUser={formData}
-                onUserPersisted={handleUserPersisted}
-                onApplyExtracted={handleApplyExtracted}
                 className="lg:sticky lg:top-20"
               />
             </div>

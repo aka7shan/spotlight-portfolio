@@ -13,9 +13,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
-import { Check, Copy, ExternalLink, Globe, Loader2, RefreshCw } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Globe,
+  Info,
+  LayoutTemplate,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { api, ApiError } from "../../lib/api";
 import { shortLinkPath } from "../../lib/routes";
+import { getTemplateName } from "../../lib/templates";
 
 /**
  * "Your portfolio link" card on the profile page.
@@ -41,6 +52,12 @@ interface ShortLinkCardProps {
   /** The user's current short code. Comes from GET /v1/me. */
   shortCode: string;
   /**
+   * The user's `activeTemplate` id — used to surface which template the
+   * public link currently renders. Falls back to the default template
+   * name (Classic) when unset, matching the public page's behaviour.
+   */
+  activeTemplate?: string;
+  /**
    * Called after a successful regenerate so the parent can swap its
    * local snapshot of the user. We pass the NEW code through; the
    * parent does the merge.
@@ -55,8 +72,13 @@ function buildPublicUrl(code: string): string {
   return `${window.location.origin}${shortLinkPath(code)}`;
 }
 
-export function ShortLinkCard({ shortCode, onShortCodeChanged }: ShortLinkCardProps) {
+export function ShortLinkCard({
+  shortCode,
+  activeTemplate,
+  onShortCodeChanged,
+}: ShortLinkCardProps) {
   const publicUrl = useMemo(() => buildPublicUrl(shortCode), [shortCode]);
+  const templateName = getTemplateName(activeTemplate);
 
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -110,12 +132,36 @@ export function ShortLinkCard({ shortCode, onShortCodeChanged }: ShortLinkCardPr
         <div className="flex items-center gap-2 text-gray-900 mb-3">
           <Globe className="w-4 h-4 text-blue-600" />
           <h3 className="text-sm font-semibold">Shareable link</h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="About your shareable link"
+                className="rounded text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent align="start">
+              Permanent random link. Pick which template renders from the{" "}
+              <span className="font-medium">Templates</span> page.
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
-          <p className="text-[10px] text-gray-500 mb-1 font-medium uppercase tracking-wide">
-            Live at
-          </p>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">
+              Live at
+            </p>
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700"
+              title="Template currently rendered at your public link"
+            >
+              <LayoutTemplate className="h-3 w-3" />
+              {templateName}
+            </span>
+          </div>
           <a
             href={publicUrl}
             target="_blank"
@@ -198,11 +244,6 @@ export function ShortLinkCard({ shortCode, onShortCodeChanged }: ShortLinkCardPr
             </AlertDialog>
           </div>
         </div>
-
-        <p className="text-[11px] text-gray-500 mt-3 leading-snug">
-          Permanent random link. Pick which template renders from the{" "}
-          <span className="font-medium">Templates</span> page.
-        </p>
       </CardContent>
     </Card>
   );

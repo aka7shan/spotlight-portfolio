@@ -6,7 +6,6 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
 import { ProfileScoreContent } from "./ProfileScoreCard";
 import { ShortLinkCard } from "./ShortLinkCard";
-import { CVManager } from "./CVManager";
 
 interface ProfileActionRailProps {
   /** Dirty flag — gates the save button and the "Unsaved" badge. */
@@ -34,12 +33,9 @@ interface ProfileActionRailProps {
    * templates need the full data set to render well.
    */
   onViewTemplates: () => void;
-  /** Current form-state user — fed to the CV card for upload/parse. */
+  /** Current form-state user — supplies the active template for the
+   *  shareable-link card. */
   currentUser: User;
-  /** Bubbled from CVManager after an upload/remove persists. */
-  onUserPersisted: (user: User) => void;
-  /** Merges accepted CV-parse output into the parent form state. */
-  onApplyExtracted: (partial: Partial<User>) => void;
   className?: string;
 }
 
@@ -48,7 +44,9 @@ interface ProfileActionRailProps {
  *
  * Groups everything that acts *on* the profile rather than describing
  * it: the Portfolio Builder save controls, completeness score, the
- * View Templates jump, and the shareable link. Mirrors `ProfileSidebar`
+ * View Templates jump, and the shareable link. (CV upload/auto-fill now
+ * lives at the top of the editor column — the onboarding hero for blank
+ * profiles, the slim quick-bar otherwise.) Mirrors `ProfileSidebar`
  * (the left identity column) so the parent can flank the editable
  * sections with a sticky column on each side.
  */
@@ -63,8 +61,6 @@ export function ProfileActionRail({
   onShortCodeChanged,
   onViewTemplates,
   currentUser,
-  onUserPersisted,
-  onApplyExtracted,
   className,
 }: ProfileActionRailProps) {
   // Defined once so the two layouts below (full-width at <100%, half-
@@ -141,15 +137,12 @@ export function ProfileActionRail({
       </Card>
 
       {shortCode && (
-        <ShortLinkCard shortCode={shortCode} onShortCodeChanged={onShortCodeChanged} />
+        <ShortLinkCard
+          shortCode={shortCode}
+          activeTemplate={currentUser.activeTemplate}
+          onShortCodeChanged={onShortCodeChanged}
+        />
       )}
-
-      <CVManager
-        currentUser={currentUser}
-        onUserPersisted={onUserPersisted}
-        onApplyExtracted={onApplyExtracted}
-        className="border-0 shadow-sm"
-      />
     </aside>
   );
 }
