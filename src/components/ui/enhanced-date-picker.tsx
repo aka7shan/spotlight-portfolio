@@ -164,7 +164,11 @@ export function EnhancedDatePicker({
         </Button>
       </div>
 
-      {/* Calendar Grid */}
+      {/* Calendar Grid — class names target react-day-picker v9's element keys
+          (weekdays/weekday/week/day/day_button + state modifiers). The grid is
+          styled entirely with Tailwind here, so the library's base stylesheet
+          is intentionally not imported. The built-in caption/nav are hidden
+          because the custom header above drives month/year + paging. */}
       <DayPicker
         mode={mode}
         selected={selected}
@@ -173,40 +177,31 @@ export function EnhancedDatePicker({
         month={getValidDate(currentMonth)}
         onMonthChange={(month) => setCurrentMonth(getValidDate(month))}
         showOutsideDays
-        className="w-full pt-0"
+        hideNavigation
+        className="w-fit"
         classNames={{
-          months: "space-y-0",
-          month: "space-y-0",
-          caption: "sr-only",
+          months: "flex flex-col",
+          month: "space-y-1",
+          month_caption: "sr-only",
           caption_label: "sr-only",
-          nav: "hidden",
-          table: "w-full border-separate border-spacing-1", // Ensure even spacing
-          head_row: "flex justify-center", // Center-align headers
-          head_cell: "w-9 text-xs font-medium text-gray-500 text-center", // Fixed width for headers
-          row: "flex justify-center", // Center-align rows
-          cell: cn(
-            "h-9 w-9 p-0 text-center text-sm relative",
-            "hover:bg-gray-100",
-            "aria-selected:bg-blue-100 aria-selected:text-blue-600"
+          month_grid: "w-full border-collapse",
+          weekdays: "flex",
+          weekday:
+            "flex h-8 w-9 items-center justify-center text-[0.75rem] font-medium text-gray-500",
+          week: "mt-1 flex w-full",
+          day: "h-9 w-9 p-0 text-center text-sm",
+          day_button: cn(
+            "inline-flex h-9 w-9 items-center justify-center rounded-md font-normal text-gray-700",
+            "transition-colors hover:bg-gray-100",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
           ),
-          day_today: "font-bold text-blue-600",
-          day_outside: "text-gray-400",
-          day_disabled: "text-gray-300 opacity-50",
-          day_hidden: "invisible",
-        }}
-        styles={{
-          
-          table: {
-            width: "90%",
-            tableLayout: "fixed", // Ensure fixed table layout for consistent column widths
-            borderSpacing: "0.125rem", // Adjust spacing between cells
-          },
-          cell: {
-            padding: "0.125rem",
-            width: "calc(100% / 7)", // Ensure each day takes 1/7th of the container width
-            textAlign: "center", // Center-align content within each cell
-          },
-          
+          today: "[&>button]:font-semibold [&>button]:text-blue-600",
+          selected:
+            "[&>button]:bg-blue-600 [&>button]:!text-white [&>button]:font-medium [&>button]:hover:bg-blue-600",
+          outside: "[&>button]:text-gray-400 [&>button]:opacity-60",
+          disabled:
+            "[&>button]:pointer-events-none [&>button]:text-gray-300 [&>button]:opacity-50",
+          hidden: "invisible",
         }}
       />
     </div>
