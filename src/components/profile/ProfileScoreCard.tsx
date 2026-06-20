@@ -96,7 +96,7 @@ function ScoreRing({ percent }: { percent: number }) {
   );
 }
 
-export function ProfileScoreCard({
+export function ProfileScoreContent({
   percent,
   missingFields,
   onJumpToSection,
@@ -113,70 +113,83 @@ export function ProfileScoreCard({
       : 0;
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
-            <ScoreRing percent={safePercent} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-sm font-semibold text-gray-900">
-                {safePercent}%
-              </span>
-            </div>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900">Profile score</p>
-            <p className="text-xs text-gray-500 leading-snug mt-0.5">
-              Recruiters seek 100% profiles — complete yours to stand out!
-            </p>
+    <>
+      <div className="flex items-center gap-4">
+        <div className="relative shrink-0">
+          <ScoreRing percent={safePercent} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-sm font-semibold text-gray-900">
+              {safePercent}%
+            </span>
           </div>
         </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-900">Profile score</p>
+          <p className="text-xs text-gray-500 leading-snug mt-0.5">
+            Recruiters seek 100% profiles — complete yours to stand out!
+          </p>
+        </div>
+      </div>
 
-        {missingFields.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 text-amber-500" />
-              Pending action
-            </p>
-            <ul className="space-y-1.5">
-              {missingFields.map((label) => {
-                const sectionId = MISSING_FIELD_TO_SECTION[label];
-                const clickable = Boolean(sectionId && onJumpToSection);
-                return (
-                  <li key={label}>
-                    <button
-                      type="button"
-                      disabled={!clickable}
-                      onClick={() => sectionId && onJumpToSection?.(sectionId)}
-                      className={
-                        "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-sm " +
-                        (clickable
-                          ? "hover:bg-amber-50 cursor-pointer"
-                          : "cursor-default")
-                      }
-                    >
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-                        <span className="text-gray-700 truncate">{label}</span>
-                      </span>
-                      <span className="flex items-center gap-1 text-xs">
-                        <Badge
-                          variant="outline"
-                          className="text-emerald-700 border-emerald-200 bg-emerald-50"
-                        >
-                          +{perFieldGain}%
-                        </Badge>
-                        {clickable && (
-                          <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
+      {missingFields.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="h-3 w-3 text-amber-500" />
+            Pending action
+          </p>
+          <ul className="space-y-1.5">
+            {missingFields.map((label) => {
+              const sectionId = MISSING_FIELD_TO_SECTION[label];
+              const clickable = Boolean(sectionId && onJumpToSection);
+              return (
+                <li key={label}>
+                  <button
+                    type="button"
+                    disabled={!clickable}
+                    onClick={() => sectionId && onJumpToSection?.(sectionId)}
+                    className={
+                      "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-sm " +
+                      (clickable
+                        ? "hover:bg-amber-50 cursor-pointer"
+                        : "cursor-default")
+                    }
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                      <span className="text-gray-700 truncate">{label}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-emerald-700 border-emerald-200 bg-emerald-50"
+                      >
+                        +{perFieldGain}%
+                      </Badge>
+                      {clickable && (
+                        <ChevronRight className="h-3.5 w-3.5 text-gray-400" />
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Standalone card wrapper around `ProfileScoreContent`. Kept for any
+ * caller that wants the score on its own; the action rail embeds the
+ * bare content inside the combined Portfolio Builder card instead.
+ */
+export function ProfileScoreCard(props: ProfileScoreCardProps) {
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardContent className="p-5">
+        <ProfileScoreContent {...props} />
       </CardContent>
     </Card>
   );

@@ -9,6 +9,12 @@ interface SectionNavProps {
   sections?: ReadonlyArray<NavSection>;
   /** Map of `id` → bool. When `true`, the pill renders a red warning dot. */
   warnings?: Record<string, boolean>;
+  /**
+   * Click handler for a pill. When provided the parent owns the jump (so
+   * it can also optimistically highlight sections it can't fully scroll
+   * to). Falls back to the internal `scrollIntoView` when omitted.
+   */
+  onSelect?: (id: string) => void;
   /** Applied to the outer container so the parent can make it sticky. */
   className?: string;
 }
@@ -31,6 +37,7 @@ export function SectionNav({
   activeId,
   sections = PROFILE_SECTIONS,
   warnings,
+  onSelect,
   className,
 }: SectionNavProps) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -94,7 +101,7 @@ export function SectionNav({
               key={s.id}
               type="button"
               data-section-id={s.id}
-              onClick={() => scrollToSection(s.id)}
+              onClick={() => (onSelect ?? scrollToSection)(s.id)}
               aria-current={isActive ? "true" : undefined}
               className={cn(
                 "relative whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors",

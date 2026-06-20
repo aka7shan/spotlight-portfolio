@@ -184,7 +184,11 @@ export function ProfilePage({
   }, [detectedChanges, onProfileChange]);
 
   const handleInputChange = useCallback((field: keyof User, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Bail out when the value is unchanged. Controlled inputs (notably the
+    // semi-controlled phone field) can fire onChange with the value they
+    // already hold; without this guard each no-op edit still allocates a new
+    // formData object, re-renders the page, and can feed an update loop.
+    setFormData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }));
   }, []);
 
   // ---------------------------------------------------------------------
@@ -192,13 +196,36 @@ export function ProfilePage({
   // ---------------------------------------------------------------------
 
   const sectionIds = useMemo(() => PROFILE_SECTIONS.map((s) => s.id), []);
-  const activeSectionId = useScrollSpy(sectionIds, { offset: STICKY_OFFSET_PX });
+  const spyActiveId = useScrollSpy(sectionIds, { offset: STICKY_OFFSET_PX });
+
+  // Optimistic pill highlight. Short trailing sections can't always be
+  // scrolled under the sticky nav, so the scroll-spy alone would never
+  // mark them active when clicked. We light the clicked pill immediately
+  // and hold it until the user scrolls again (see the effect below).
+  const [manualActiveId, setManualActiveId] = useState<string | null>(null);
+  const programmaticUntilRef = useRef(0);
+  const activeSectionId = manualActiveId ?? spyActiveId;
 
   const scrollToSection = useCallback((sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (!el) return;
+    setManualActiveId(sectionId);
+    // Ignore the scroll events this smooth-scroll emits; only a later,
+    // user-initiated scroll should release the manual highlight.
+    programmaticUntilRef.current = Date.now() + 800;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
+
+  // Hand control back to the scroll-spy once the user scrolls on their
+  // own (after the programmatic smooth-scroll has settled).
+  useEffect(() => {
+    if (manualActiveId === null) return;
+    const onScroll = () => {
+      if (Date.now() > programmaticUntilRef.current) setManualActiveId(null);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [manualActiveId]);
 
   // ---------------------------------------------------------------------
   // Save (with deep-link to broken section)
@@ -327,18 +354,23 @@ export function ProfilePage({
               Three-column body.
                 - lg+: identity column | editable sections | action rail
                 - mobile: everything stacks (see `order-last` below)
+              All three tracks are fractional (1 : 2.5 : 1) so the whole
+              layout scales with the viewport instead of the middle column
+              absorbing every resize. The side columns floor at 300px
+              (below that the cards get cramped) and then the middle keeps
+              shrinking on its own.
               `items-start` on the grid is needed for `lg:sticky` to
               behave on the side columns (sticky only works when the
               element is not a stretched flex/grid item).
             */}
-            <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)_380px] gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(300px,1fr)_minmax(0,2.5fr)_minmax(300px,1fr)] gap-6 items-start">
               {/* LEFT — identity: name, contact, social links. */}
               <ProfileSidebar
                 user={formData}
                 onUserPersisted={handleUserPersisted}
                 onJumpToSection={scrollToSection}
                 handleInputChange={handleInputChange}
-                className="lg:sticky lg:top-16"
+                className="lg:sticky lg:top-20"
               />
 
               {/* MIDDLE — the editable sections. `order-last` drops it
@@ -349,67 +381,68 @@ export function ProfilePage({
                     now that the full-width action bar is gone. */}
                 <SectionNav
                   activeId={activeSectionId}
-                  className="sticky top-16 z-30"
+                  onSelect={scrollToSection}
+                  className="sticky top-20 z-30"
                 />
 
                 <div className="mt-6 space-y-10">
-                  <section id="section-summary" className="scroll-mt-32">
+                  <section id="section-summary" className="scroll-mt-36">
                     <SummarySection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-personal" className="scroll-mt-32">
+                  <section id="section-personal" className="scroll-mt-36">
                     <PersonalDetailsSection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-experience" className="scroll-mt-32">
+                  <section id="section-experience" className="scroll-mt-36">
                     <ExperienceTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-education" className="scroll-mt-32">
+                  <section id="section-education" className="scroll-mt-36">
                     <EducationTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-skills" className="scroll-mt-32">
+                  <section id="section-skills" className="scroll-mt-36">
                     <SkillsSection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-projects" className="scroll-mt-32">
+                  <section id="section-projects" className="scroll-mt-36">
                     <ProjectsSection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-certifications" className="scroll-mt-32">
+                  <section id="section-certifications" className="scroll-mt-36">
                     <CertificationsTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-achievements" className="scroll-mt-32">
+                  <section id="section-achievements" className="scroll-mt-36">
                     <AchievementsTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
                   </section>
 
-                  <section id="section-languages" className="scroll-mt-32">
+                  <section id="section-languages" className="scroll-mt-36">
                     <LanguagesTab
                       formData={formData}
                       handleInputChange={handleInputChange}
@@ -436,7 +469,7 @@ export function ProfilePage({
                 currentUser={formData}
                 onUserPersisted={handleUserPersisted}
                 onApplyExtracted={handleApplyExtracted}
-                className="lg:sticky lg:top-16"
+                className="lg:sticky lg:top-20"
               />
             </div>
           </div>

@@ -3,7 +3,8 @@ import type { User } from "../../types/portfolio";
 import { cn } from "../ui/utils";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { ProfileScoreCard } from "./ProfileScoreCard";
+import { Card, CardContent } from "../ui/card";
+import { ProfileScoreContent } from "./ProfileScoreCard";
 import { ShortLinkCard } from "./ShortLinkCard";
 import { CVManager } from "./CVManager";
 
@@ -66,57 +67,78 @@ export function ProfileActionRail({
   onApplyExtracted,
   className,
 }: ProfileActionRailProps) {
+  // Defined once so the two layouts below (full-width at <100%, half-
+  // width beside View Templates at 100%) share identical markup. The
+  // `w-full` works in both: it fills the row when alone and the grid
+  // cell when paired.
+  const saveButton = (
+    <Button
+      onClick={onSave}
+      disabled={!hasUnsavedChanges || isSaving}
+      title={hasUnsavedChanges ? undefined : "No changes to save"}
+      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm"
+    >
+      {isSaving ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        <Save className="w-4 h-4" />
+      )}
+      {isSaving ? "Saving…" : "Save Changes"}
+    </Button>
+  );
+
   return (
     <aside className={cn("space-y-4", className)}>
-      <div className="bg-white/85 backdrop-blur-lg border border-gray-200 rounded-xl shadow-sm p-4">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <h2 className="text-base font-semibold text-gray-900">
-              Portfolio Builder
-            </h2>
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              <h2 className="text-base font-semibold text-gray-900">
+                Portfolio Builder
+              </h2>
+            </div>
+            {hasUnsavedChanges && (
+              <Badge
+                variant="outline"
+                className="bg-orange-50 text-orange-700 border-orange-200"
+              >
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Unsaved
+              </Badge>
+            )}
           </div>
-          {hasUnsavedChanges && (
-            <Badge
-              variant="outline"
-              className="bg-orange-50 text-orange-700 border-orange-200"
-            >
-              <AlertTriangle className="w-3 h-3 mr-1" />
-              Unsaved
-            </Badge>
-          )}
-        </div>
-        <Button
-          onClick={onSave}
-          disabled={!hasUnsavedChanges || isSaving}
-          title={hasUnsavedChanges ? undefined : "No changes to save"}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-sm"
-        >
-          {isSaving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+
+          <div className="pt-4 border-t border-gray-100">
+            <ProfileScoreContent
+              percent={profileCompleteness}
+              missingFields={missingFields}
+              onJumpToSection={onJumpToSection}
+            />
+          </div>
+
+          {profileCompleteness === 100 ? (
+            // flex-wrap (not a rigid 2-col grid) so the buttons sit side by
+            // side on a wide rail but stack once the column narrows — the
+            // labels would otherwise overflow as the layout scales down.
+            <div className="flex flex-wrap gap-2">
+              <div className="flex-1 min-w-[140px]">{saveButton}</div>
+              <div className="flex-1 min-w-[140px]">
+                <Button
+                  onClick={onViewTemplates}
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <Eye className="w-4 h-4" />
+                  View Templates
+                </Button>
+              </div>
+            </div>
           ) : (
-            <Save className="w-4 h-4" />
+            saveButton
           )}
-          {isSaving ? "Saving…" : "Save Changes"}
-        </Button>
-      </div>
-
-      <ProfileScoreCard
-        percent={profileCompleteness}
-        missingFields={missingFields}
-        onJumpToSection={onJumpToSection}
-      />
-
-      {profileCompleteness === 100 && (
-        <Button
-          onClick={onViewTemplates}
-          variant="outline"
-          className="w-full flex items-center gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-        >
-          <Eye className="w-4 h-4" />
-          View Templates
-        </Button>
-      )}
+        </CardContent>
+      </Card>
 
       {shortCode && (
         <ShortLinkCard shortCode={shortCode} onShortCodeChanged={onShortCodeChanged} />

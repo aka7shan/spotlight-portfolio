@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator
 } from "../ui/dropdown-menu";
 import { Palette, Menu, X, User as UserIcon, LogOut, ChevronDown } from "lucide-react";
-import { ImageWithFallback } from "../common/ImageWithFallback";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import type { User } from "../../types/portfolio";
 import styles from "./Navigation.module.css";
 
@@ -78,14 +78,14 @@ export function Navigation({
     setIsDropdownOpen(open);
   }, []);
 
-  // First word of a display name, truncated so the dropdown trigger never
-  // overflows. "Akarshan Sharma" → "Akarshan"; long single-token names like
-  // "Bartholomew" → "Bartholom" (so the trailing "..." reads naturally).
+  // First word of a display name for the trigger pill. Overflow is
+  // handled by `max-w` + `truncate` on the label, so we no longer slice
+  // or append a hard-coded "..." (which made every name look truncated
+  // even when it wasn't).
   const firstName = (name: string | undefined): string => {
     const raw = (name ?? '').trim();
     if (!raw) return 'there';
-    const first = raw.split(/\s+/)[0];
-    return first.length > 10 ? `${first.slice(0, 8)}` : first;
+    return raw.split(/\s+/)[0];
   };
 
   return (
@@ -127,47 +127,55 @@ export function Navigation({
           <div className="flex items-center space-x-4">
             {user ? (
               // Authenticated User Menu
-              <DropdownMenu open={isDropdownOpen} onOpenChange={handleDropdownOpenChange}>
+              <DropdownMenu
+                open={isDropdownOpen}
+                onOpenChange={handleDropdownOpenChange}
+                modal={false}
+              >
                 <DropdownMenuTrigger asChild>
                   {/*
-                    The trigger is the avatar + a "Hi, <firstName>..." pill on
+                    The trigger is the avatar + a "Hi, <firstName>" pill on
                     md+. On small screens we just show the avatar to save room.
                     Wider trigger surface = less tap-fumbling, which matters
                     because every authenticated entry point lives behind this
                     menu (profile, logout, future settings).
+
+                    `modal={false}` on the menu keeps the page scrollbar in
+                    place while open — with the default (modal) the scroll
+                    lock removes the scrollbar and shifts the fixed navbar vs.
+                    the page content, which read as a jitter on open/close.
                   */}
                   <Button
                     variant="ghost"
                     className="flex h-10 items-center gap-2 rounded-full pl-1 pr-3 hover:bg-gray-100"
                   >
-                    <ImageWithFallback
-                      src={user.avatar || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face`}
-                      alt={user.name}
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                    <span className="hidden md:inline text-sm font-medium text-gray-700 max-w-[120px] truncate">
-                      Hi, {firstName(user.name)}...
+                    <UserAvatar user={user} className="h-8 w-8" />
+                    <span className="hidden md:inline text-sm font-medium text-gray-700 max-w-[140px] truncate">
+                      Hi, {firstName(user.name)}
                     </span>
                     <ChevronDown className="hidden md:block w-4 h-4 text-gray-500" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-60 p-2"
+                  className="w-64 p-2"
                   align="end"
-                  forceMount
                   sideOffset={8}
                   onCloseAutoFocus={(e) => {
-                    // Prevent focus trap and allow normal scrolling
+                    // Don't yank focus (and the scroll position) back to the
+                    // trigger when the menu closes.
                     e.preventDefault();
                   }}
                 >
-                  <div className="px-2 pt-1 pb-2">
-                    <p className="text-sm font-semibold text-gray-900">
-                      Hi, {firstName(user.name)}...
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {user.email}
-                    </p>
+                  <div className="flex items-center gap-3 px-2 py-2">
+                    <UserAvatar user={user} className="h-10 w-10 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {user.name || "Your account"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                    </div>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -289,5 +297,26 @@ export function Navigation({
         )}
       </div>
     </nav>
+  );
+}
+
+/**
+ * Avatar for the navbar. Shows the uploaded image when present, otherwise
+ * a gradient initial that matches the profile page's `AvatarUpload`
+ * fallback. This keeps the navbar consistent with the user's actual
+ * profile — previously a user without a photo got a random stock face.
+ */
+function UserAvatar({ user, className }: { user: User; className?: string }) {
+  const initial = (user.name ?? "").trim().charAt(0).toUpperCase() || "U";
+  return (
+    <Avatar className={className}>
+      {user.avatar ? (
+        <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
+      ) : (
+        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-medium">
+          {initial}
+        </AvatarFallback>
+      )}
+    </Avatar>
   );
 }

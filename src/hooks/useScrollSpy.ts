@@ -83,21 +83,43 @@ export function useScrollSpy(
      *     pill stays highlighted while the user reads the last block).
      */
     const recompute = () => {
-      let bestId: string | null = elements[0]?.id ?? null;
-      let bestTop = -Infinity;
+      const scrollEl = document.scrollingElement || document.documentElement;
+      const scrollY = window.scrollY;
+      const maxScroll = Math.max(0, scrollEl.scrollHeight - window.innerHeight);
 
-      for (const el of elements) {
-        const top = el.getBoundingClientRect().top;
-        if (top - offset <= 0 && top > bestTop) {
-          bestTop = top;
-          bestId = el.id;
+      // For each section, the scroll position at which its top crosses the
+      // offset line (document-space). Increases in source order because
+      // the sections stack top-to-bottom.
+      const targets = elements.map(
+        (el) => el.getBoundingClientRect().top + scrollY - offset,
+      );
+
+      // Trailing sections can need MORE scroll than the page actually has
+      // (target > maxScroll) — e.g. a short "Languages" block at the very
+      // bottom that can never reach the offset line. Those pills would
+      // otherwise never light up. Spread every unreachable target evenly
+      // across the leftover scroll budget so the final sections still
+      // activate one-by-one (and the last lights up once we hit bottom).
+      const firstTrapped = targets.findIndex((t) => t > maxScroll);
+      if (firstTrapped !== -1 && maxScroll > 0) {
+        const start =
+          firstTrapped > 0
+            ? Math.min(targets[firstTrapped - 1], maxScroll)
+            : 0;
+        const span = maxScroll - start;
+        const trappedCount = targets.length - firstTrapped;
+        for (let i = firstTrapped; i < targets.length; i++) {
+          const progress = (i - firstTrapped + 1) / trappedCount; // (0, 1]
+          targets[i] = start + span * progress;
         }
       }
 
-      // After scrolling past the last section the loop's predicate
-      // (`top - offset <= 0`) holds for every element, and we end up
-      // with the bottom-most one — which is what we want. No special
-      // case needed; the comment above documents the intent.
+      // Active = the last section whose target we've reached or passed.
+      // `targets` is non-decreasing so the last match wins.
+      let bestId: string | null = elements[0]?.id ?? null;
+      for (let i = 0; i < elements.length; i++) {
+        if (targets[i] <= scrollY + 1) bestId = elements[i].id;
+      }
 
       setActiveId((prev) => (prev === bestId ? prev : bestId));
     };
@@ -127,10 +149,13 @@ export function useScrollSpy(
     // crossed" case (e.g. small wheel ticks inside a single tall
     // section). `passive: true` matters — we never preventDefault.
     window.addEventListener("scroll", recompute, { passive: true });
+    // maxScroll + per-section offsets shift on resize, so recompute then too.
+    window.addEventListener("resize", recompute, { passive: true });
 
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", recompute);
+      window.removeEventListener("resize", recompute);
     };
   }, [ids, offset, enabled]);
 
