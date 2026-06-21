@@ -2,12 +2,14 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Sparkles } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { X, Send, Sparkles } from "lucide-react";
 import styles from "./ChatWidget.module.css";
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  // Pause the looping orb pulse for users who asked the OS to reduce motion.
+  const reduce = useReducedMotion();
 
   const handleToggle = useCallback(() => {
     setIsOpen(prev => !prev);
@@ -27,58 +29,68 @@ export function ChatWidget() {
 
   return (
     <>
-      {/* Chat Button */}
+      {/* Launcher pill: frosted bar with a label + a live "AI orb" that
+          gently pulses to invite a click. The label crossfades between
+          "Ask anything!" and "Close" as the window toggles. */}
       <div className="fixed bottom-6 right-6 z-50">
-        <Button
+        <button
+          type="button"
           onClick={handleToggle}
-          className={styles.chatButton}
+          aria-label={isOpen ? "Close AI assistant" : "Open AI assistant"}
+          aria-expanded={isOpen}
+          className="group flex items-center gap-2.5 rounded-full border border-white/50 bg-white/80 py-2 pl-4 pr-2 shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white hover:shadow-xl dark:border-white/10 dark:bg-gray-800/80 dark:hover:bg-gray-800"
         >
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
-              <motion.div
+              <motion.span
                 key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"
               >
-                <X className="w-6 h-6 text-white" />
-              </motion.div>
+                <X className="h-4 w-4" />
+                Close
+              </motion.span>
             ) : (
-              <motion.div
-                key="chat"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="relative"
+              <motion.span
+                key="ask"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100"
               >
-                <MessageCircle className="w-6 h-6 text-white" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
-              </motion.div>
+                <Sparkles className="h-4 w-4 text-purple-600" />
+                Ask anything!
+              </motion.span>
             )}
           </AnimatePresence>
-        </Button>
 
-        {/* Floating tooltip */}
-        <AnimatePresence>
-          {!isOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: 20, scale: 0.8 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
-              className={styles.tooltip}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-medium">Ask anything!</span>
-              </div>
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 translate-x-full">
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* The orb. A breathing core plus an expanding halo "blink".
+              Both loops stop when the window is open or motion is reduced. */}
+          <span className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center">
+            {!reduce && !isOpen && (
+              <motion.span
+                aria-hidden="true"
+                className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600"
+                animate={{ scale: [1, 1.45, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
+            <motion.span
+              aria-hidden="true"
+              className="relative h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 via-violet-500 to-emerald-400 shadow-inner ring-1 ring-white/40"
+              animate={reduce || isOpen ? undefined : { scale: [1, 1.06, 1] }}
+              transition={
+                reduce || isOpen
+                  ? undefined
+                  : { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+              }
+            />
+          </span>
+        </button>
       </div>
 
       {/* Chat Window */}

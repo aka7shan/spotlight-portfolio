@@ -1,3 +1,11 @@
+import { useEffect } from "react";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "framer-motion";
 import { ChevronRight, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -96,6 +104,33 @@ function ScoreRing({ percent }: { percent: number }) {
   );
 }
 
+/**
+ * Animated percentage label that rolls from its previous value to the new
+ * one. Uses a motion value + `useTransform`, so the digits update on the
+ * animation frame WITHOUT re-rendering React each tick. Falls back to the
+ * final value instantly under `prefers-reduced-motion`.
+ */
+function CountUpPercent({ value }: { value: number }) {
+  const reduce = useReducedMotion();
+  const mv = useMotionValue(reduce ? value : 0);
+  const text = useTransform(mv, (v) => `${Math.round(v)}%`);
+
+  useEffect(() => {
+    if (reduce) {
+      mv.set(value);
+      return;
+    }
+    const controls = animate(mv, value, { duration: 0.8, ease: "easeOut" });
+    return () => controls.stop();
+  }, [value, reduce, mv]);
+
+  return (
+    <motion.span className="text-sm font-semibold text-gray-900">
+      {text}
+    </motion.span>
+  );
+}
+
 export function ProfileScoreContent({
   percent,
   missingFields,
@@ -118,9 +153,7 @@ export function ProfileScoreContent({
         <div className="relative shrink-0">
           <ScoreRing percent={safePercent} />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-sm font-semibold text-gray-900">
-              {safePercent}%
-            </span>
+            <CountUpPercent value={safePercent} />
           </div>
         </div>
         <div className="min-w-0">

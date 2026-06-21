@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "../ui/utils";
 import { PROFILE_SECTIONS, type NavSection } from "./sectionDefinitions";
 
@@ -41,6 +42,10 @@ export function SectionNav({
   className,
 }: SectionNavProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  // Honour the OS "reduce motion" setting: we keep the sliding indicator
+  // (so the active pill is always correctly placed) but make the move
+  // instant instead of springing.
+  const reduce = useReducedMotion();
 
   // Pre-compute the warning flags into each section so the render loop
   // is a single map. Doing this here (vs. in the loop body) keeps the
@@ -84,8 +89,12 @@ export function SectionNav({
         className,
       )}
     >
-      <div
+      <motion.div
         ref={listRef}
+        // `layoutScroll` lets the shared-layout indicator measure this
+        // element's scroll offset, so the pill lands in the right place
+        // even when the strip is scrolled horizontally.
+        layoutScroll
         className={cn(
           // Horizontal scroll with a sensible appearance: the native
           // scrollbar shows up on overflow (matches reference image)
@@ -109,21 +118,38 @@ export function SectionNav({
                 isActive
                   ? // Soft purple pill matches the reference design and
                     // contrasts cleanly against the white nav surface.
-                    "bg-purple-100 text-purple-700"
+                    "text-purple-700"
                   : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
               )}
             >
-              {s.label}
+              {/*
+                Shared-layout "magic" indicator: a single purple pill that
+                physically slides from the previously-active label to the
+                new one via `layoutId`. Only ever one is mounted at a time.
+              */}
+              {isActive && (
+                <motion.span
+                  layoutId="section-nav-active-pill"
+                  aria-hidden="true"
+                  className="absolute inset-0 rounded-full bg-purple-100"
+                  transition={
+                    reduce
+                      ? { duration: 0 }
+                      : { type: "spring", stiffness: 500, damping: 40 }
+                  }
+                />
+              )}
+              <span className="relative z-10">{s.label}</span>
               {s.hasWarning && (
                 <span
                   aria-label="Needs attention"
-                  className="absolute -top-0.5 -right-0.5 inline-block h-1.5 w-1.5 rounded-full bg-red-500"
+                  className="absolute -top-0.5 -right-0.5 z-10 inline-block h-1.5 w-1.5 rounded-full bg-red-500"
                 />
               )}
             </button>
           );
         })}
-      </div>
+      </motion.div>
     </nav>
   );
 }

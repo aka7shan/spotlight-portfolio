@@ -1,13 +1,5 @@
 /* ChatWidget.module.css */
 
-.chatButton {
-  @apply w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 border-0 hover:scale-105;
-}
-
-.tooltip {
-  @apply absolute right-16 bottom-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap;
-}
-
 .chatCard {
   @apply w-full h-full shadow-2xl border-2 border-primary/20;
 }

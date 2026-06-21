@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { UnsavedChangesDialog } from "../common/UnsavedChangesDialog";
 import { ProfileSidebar } from "./ProfileSidebar";
 import { ProfileActionRail } from "./ProfileActionRail";
 import { ProfileGettingStarted } from "./ProfileGettingStarted";
 import { CvQuickBar } from "./CvQuickBar";
+import { RevealSection } from "./RevealSection";
+import { ScrollCue } from "../common/ScrollCue";
 import { SectionNav } from "./SectionNav";
 import { PROFILE_SECTIONS } from "./sectionDefinitions";
 import { ExperienceTab } from "./ExperienceTab";
@@ -87,6 +90,18 @@ export function ProfilePage({
   // manually"). The hero also auto-collapses once the profile gains any
   // content, so this only matters while the profile is still empty.
   const [dismissedGettingStarted, setDismissedGettingStarted] = useState(false);
+
+  // Drives the hero <-> quick-bar crossfade. Emptied when the user prefers
+  // reduced motion so the swap is instant (no transform/opacity tween).
+  const reduceMotion = useReducedMotion();
+  const swapAnim = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: -8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+        transition: { duration: 0.25, ease: "easeOut" as const },
+      };
 
   // Holds the latest `handleSave` so the keyboard shortcut effect can
   // call it without re-binding the listener on every render.
@@ -409,23 +424,32 @@ export function ProfilePage({
                 {/* Blank-slate users get the two-door onboarding hero;
                     everyone else gets the slim CV/résumé quick-bar. Both
                     sit at the very top of the editor column and drive the
-                    same upload → AI auto-fill flow. */}
-                {showGettingStarted ? (
-                  <ProfileGettingStarted
-                    currentUser={formData}
-                    onUserPersisted={handleUserPersisted}
-                    onApplyExtracted={handleApplyExtracted}
-                    onFillManually={handleFillManually}
-                    className="mb-6"
-                  />
-                ) : (
-                  <CvQuickBar
-                    currentUser={formData}
-                    onUserPersisted={handleUserPersisted}
-                    onApplyExtracted={handleApplyExtracted}
-                    className="mb-6"
-                  />
-                )}
+                    same upload → AI auto-fill flow. `AnimatePresence`
+                    crossfades between them (e.g. the hero collapsing once a
+                    CV auto-fill adds content). `initial={false}` skips the
+                    animation on first paint so the page lands instantly. */}
+                <AnimatePresence mode="wait" initial={false}>
+                  {showGettingStarted ? (
+                    <motion.div key="getting-started" {...swapAnim}>
+                      <ProfileGettingStarted
+                        currentUser={formData}
+                        onUserPersisted={handleUserPersisted}
+                        onApplyExtracted={handleApplyExtracted}
+                        onFillManually={handleFillManually}
+                        className="mb-6"
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div key="cv-quick-bar" {...swapAnim}>
+                      <CvQuickBar
+                        currentUser={formData}
+                        onUserPersisted={handleUserPersisted}
+                        onApplyExtracted={handleApplyExtracted}
+                        className="mb-6"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Sticky section nav. Pins just under the global navbar
                     now that the full-width action bar is gone. */}
@@ -436,68 +460,74 @@ export function ProfilePage({
                 />
 
                 <div className="mt-6 space-y-10">
-                  <section id="section-summary" className="scroll-mt-36">
+                  <RevealSection id="section-summary" className="scroll-mt-36">
                     <SummarySection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-personal" className="scroll-mt-36">
+                  <RevealSection id="section-personal" className="scroll-mt-36">
                     <PersonalDetailsSection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-experience" className="scroll-mt-36">
+                  <RevealSection id="section-experience" className="scroll-mt-36">
                     <ExperienceTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-education" className="scroll-mt-36">
+                  <RevealSection id="section-education" className="scroll-mt-36">
                     <EducationTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-skills" className="scroll-mt-36">
+                  <RevealSection id="section-skills" className="scroll-mt-36">
                     <SkillsSection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-projects" className="scroll-mt-36">
+                  <RevealSection id="section-projects" className="scroll-mt-36">
                     <ProjectsSection
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-certifications" className="scroll-mt-36">
+                  <RevealSection
+                    id="section-certifications"
+                    className="scroll-mt-36"
+                  >
                     <CertificationsTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-achievements" className="scroll-mt-36">
+                  <RevealSection
+                    id="section-achievements"
+                    className="scroll-mt-36"
+                  >
                     <AchievementsTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
 
-                  <section id="section-languages" className="scroll-mt-36">
+                  <RevealSection id="section-languages" className="scroll-mt-36">
                     <LanguagesTab
                       formData={formData}
                       handleInputChange={handleInputChange}
                     />
-                  </section>
+                  </RevealSection>
                 </div>
               </div>
 
@@ -523,6 +553,11 @@ export function ProfilePage({
           </div>
         </div>
       </div>
+
+      {/* First-load hint that there's more profile below the fold. Fades
+          out as soon as the user scrolls; hidden entirely if the page
+          doesn't overflow. */}
+      <ScrollCue />
 
       <UnsavedChangesDialog
         isOpen={showUnsavedDialog}
