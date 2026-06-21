@@ -71,24 +71,26 @@ export function ProfileSummaryCard({
         via CoverUpload's compact mode. Falls back to a pastel gradient
         when no cover is set.
       */}
-      <CoverUpload
-        currentCover={user.coverImage}
-        onCoverPersisted={onUserPersisted}
-        compact
-        heightClassName="h-20"
-      />
-      <CardContent className="px-5 pb-5 pt-0">
-        <div className="flex items-start gap-4 -mt-10">
-          <div className="shrink-0">
-            <AvatarUpload
-              currentAvatar={user.avatar}
-              userName={user.name}
-              onAvatarPersisted={onUserPersisted}
-            />
-          </div>
+      <div className="relative">
+        <CoverUpload
+          currentCover={user.coverImage}
+          onCoverPersisted={onUserPersisted}
+          compact
+          heightClassName="aspect-[5/2]"
+        />
+        {/* Avatar is seated inside the cover's bottom-left so the banner
+            fills the whole header (no empty band beside the avatar). */}
+        <div className="absolute bottom-4 left-5 z-10">
+          <AvatarUpload
+            currentAvatar={user.avatar}
+            userName={user.name}
+            onAvatarPersisted={onUserPersisted}
+          />
         </div>
+      </div>
 
-        <div className="mt-3">
+      <CardContent className="px-5 pb-5 pt-4">
+        <div>
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-lg font-semibold text-gray-900 leading-tight">
               {user.name || "Your Name"}

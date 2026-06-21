@@ -56,10 +56,12 @@ interface CoverUploadProps {
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-// Cover crop ratio (width : height). A wide 3:1 banner reads well both in the
-// slim sidebar header and as a hero background on the public portfolio
-// templates (both use object-cover), and gives the user a predictable frame.
-const COVER_ASPECT = 3;
+// Cover crop ratio (width : height). 5:2 gives a proper banner that fills the
+// summary-card header (the avatar is seated inside its bottom-left corner) and
+// still reads well as a hero background on the public templates. Keep this in
+// sync with the `aspect-[5/2]` display box in ProfileSummaryCard so the crop
+// is WYSIWYG (no second object-cover crop).
+const COVER_ASPECT = 2.5;
 
 export function CoverUpload({
   currentCover,

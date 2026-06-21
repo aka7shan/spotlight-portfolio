@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Camera, Trash2, ImagePlus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import { Camera, Trash2 } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import type { User } from "../../types/portfolio";
 import { ImageCropDialog } from "./ImageCropDialog";
@@ -42,11 +49,13 @@ export function AvatarUpload({
   const [isWorking, setIsWorking] = useState(false);
   // Local blob URL displayed while bytes are in flight. We don't reuse
   // currentAvatar for this because we want instant feedback the moment the
-  // user picks a file, before the network round-trip completes.
+  // user confirms the crop, before the network round-trip completes.
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   // Object URL of the picked file while the crop/reposition dialog is open.
   // Upload only happens once the user confirms the crop.
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  // Whether the "view photo" preview dialog (with Change/Remove) is open.
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Clean up any outstanding blob: URL when this component unmounts.
@@ -96,8 +105,8 @@ export function AvatarUpload({
     });
   }, []);
 
-  // Upload the cropped result. Optimistic preview + full-user sync, same as
-  // before — only the bytes now come from the crop canvas, not the raw file.
+  // Upload the cropped result. Optimistic preview + full-user sync — only
+  // the bytes now come from the crop canvas, not the raw file.
   const uploadFile = useCallback(
     async (file: File) => {
       const localUrl = URL.createObjectURL(file);
@@ -168,6 +177,18 @@ export function AvatarUpload({
     }
   }, [isWorking, onAvatarPersisted, previewUrl]);
 
+  // From the preview dialog: close it, then open the file picker (which
+  // leads into the crop dialog on selection).
+  const handleChangeFromPreview = useCallback(() => {
+    setPreviewOpen(false);
+    handleUploadClick();
+  }, [handleUploadClick]);
+
+  const handleRemoveFromPreview = useCallback(() => {
+    setPreviewOpen(false);
+    void handleRemove();
+  }, [handleRemove]);
+
   const displayAvatar = previewUrl || currentAvatar;
   const fallbackInitial = userName ? userName.charAt(0).toUpperCase() : "U";
 
@@ -181,8 +202,15 @@ export function AvatarUpload({
         className="hidden"
       />
 
-      <div className="relative group cursor-pointer" onClick={handleUploadClick}>
-        <Avatar className="w-32 h-32 ring-4 ring-white shadow-xl">
+      {/* The avatar is a button: clicking opens the preview dialog where the
+          Change / Remove actions live (so we don't clutter the small circle). */}
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        aria-label="View profile photo"
+        className="relative group rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+      >
+        <Avatar className="w-24 h-24 ring-4 ring-white shadow-xl">
           {displayAvatar ? (
             <AvatarImage
               src={displayAvatar}
@@ -196,52 +224,62 @@ export function AvatarUpload({
           )}
         </Avatar>
 
-        <div className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-          {displayAvatar ? (
-            <div className="flex flex-col items-center gap-2">
+        {/* Hover hint that the photo is interactive. */}
+        <span className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+          <Camera className="w-6 h-6 text-white" />
+        </span>
+
+        {isWorking && (
+          <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
+            <span className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
+          </span>
+        )}
+      </button>
+
+      {/* Preview dialog — shows the photo large with its actions. */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="w-[min(92vw,380px)] max-w-none">
+          <DialogHeader>
+            <DialogTitle>Profile photo</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex justify-center py-2">
+            {displayAvatar ? (
+              <img
+                src={displayAvatar}
+                alt={userName || "Profile"}
+                className="h-56 w-56 rounded-full object-cover ring-4 ring-white shadow-lg"
+              />
+            ) : (
+              <div className="flex h-56 w-56 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-6xl font-semibold text-white shadow-lg">
+                {fallbackInitial}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-center">
+            <Button
+              onClick={handleChangeFromPreview}
+              disabled={isWorking}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              <Camera className="mr-2 h-4 w-4" />
+              {currentAvatar ? "Change photo" : "Upload photo"}
+            </Button>
+            {currentAvatar && (
               <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleUploadClick();
-                }}
-                size="sm"
-                variant="secondary"
-                className="bg-white/90 hover:bg-white text-black border-0 text-xs px-3 py-1"
+                onClick={handleRemoveFromPreview}
+                variant="outline"
                 disabled={isWorking}
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
               >
-                <Camera className="w-3 h-3 mr-1" />
-                {isWorking ? "Uploading..." : "Change"}
-              </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  void handleRemove();
-                }}
-                size="sm"
-                variant="secondary"
-                className="bg-white/90 hover:bg-white text-red-600 border-0 text-xs px-3 py-1"
-                disabled={isWorking}
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Remove
               </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center text-white">
-              <ImagePlus className="w-8 h-8 mb-2" />
-              <span className="text-sm font-medium">
-                {isWorking ? "Uploading..." : "Upload Image"}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {isWorking && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ImageCropDialog
         open={cropSrc !== null}
