@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Camera, ImagePlus, Trash2 } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import type { User } from "../../types/portfolio";
+import { ImageCropDialog } from "./ImageCropDialog";
 
 /**
  * Landscape cover image uploader for the profile header.
@@ -55,6 +56,11 @@ interface CoverUploadProps {
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+// Cover crop ratio (width : height). A wide 3:1 banner reads well both in the
+// slim sidebar header and as a hero background on the public portfolio
+// templates (both use object-cover), and gives the user a predictable frame.
+const COVER_ASPECT = 3;
+
 export function CoverUpload({
   currentCover,
   onCoverPersisted,
@@ -66,6 +72,9 @@ export function CoverUpload({
   // Local blob URL displayed while bytes are in flight. Cleared on success or
   // failure; the parent's `currentCover` takes over once the upload resolves.
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Object URL of the picked file while the crop/reposition dialog is open.
+  // Upload only happens once the user confirms the crop.
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Final safety net: revoke any blob URL on unmount so we don't leak handles
@@ -78,8 +87,9 @@ export function CoverUpload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Pick a file → validate → open the crop dialog (no upload yet).
   const handleFileSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       // Reset so the same file can be re-selected and re-fire the event.
       if (event.target) event.target.value = "";
@@ -98,6 +108,26 @@ export function CoverUpload({
         return;
       }
 
+      const url = URL.createObjectURL(file);
+      setCropSrc((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    },
+    [],
+  );
+
+  const closeCrop = useCallback(() => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }, []);
+
+  // Upload the cropped result. Optimistic preview + full-user sync, same as
+  // before — only the bytes now come from the crop canvas, not the raw file.
+  const uploadFile = useCallback(
+    async (file: File) => {
       const localUrl = URL.createObjectURL(file);
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -106,9 +136,6 @@ export function CoverUpload({
       setIsWorking(true);
 
       try {
-        // Forward the full assembled user; the parent will surgically
-        // sync formData.coverImage + originalData.coverImage AND swap
-        // the useProfile cache. See AvatarUpload for the same pattern.
         const { user } = await api.me.uploadCover(file);
         onCoverPersisted(user);
         URL.revokeObjectURL(localUrl);
@@ -129,6 +156,17 @@ export function CoverUpload({
       }
     },
     [onCoverPersisted],
+  );
+
+  const handleCropConfirm = useCallback(
+    (blob: Blob) => {
+      const file = new File([blob], "cover.jpg", {
+        type: blob.type || "image/jpeg",
+      });
+      closeCrop();
+      void uploadFile(file);
+    },
+    [closeCrop, uploadFile],
   );
 
   const handleUploadClick = useCallback(() => {
@@ -274,6 +312,18 @@ export function CoverUpload({
           <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
         </div>
       )}
+
+      <ImageCropDialog
+        open={cropSrc !== null}
+        imageSrc={cropSrc}
+        aspect={COVER_ASPECT}
+        cropShape="rect"
+        title="Adjust your cover image"
+        confirmLabel="Set cover"
+        maxOutputSize={1600}
+        onCancel={closeCrop}
+        onConfirm={handleCropConfirm}
+      />
     </div>
   );
 }

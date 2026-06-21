@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Camera, Trash2, ImagePlus } from "lucide-react";
 import { api, ApiError } from "../../lib/api";
 import type { User } from "../../types/portfolio";
+import { ImageCropDialog } from "./ImageCropDialog";
 
 interface AvatarUploadProps {
   currentAvatar?: string;
@@ -43,6 +44,9 @@ export function AvatarUpload({
   // currentAvatar for this because we want instant feedback the moment the
   // user picks a file, before the network round-trip completes.
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Object URL of the picked file while the crop/reposition dialog is open.
+  // Upload only happens once the user confirms the crop.
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Clean up any outstanding blob: URL when this component unmounts.
@@ -55,8 +59,9 @@ export function AvatarUpload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Pick a file → validate → open the crop dialog (no upload yet).
   const handleFileSelect = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       // Reset the input element so picking the same file twice re-fires the change event.
       if (event.target) event.target.value = "";
@@ -75,7 +80,26 @@ export function AvatarUpload({
         return;
       }
 
-      // Instant local preview so the UI feels responsive on slow networks.
+      const url = URL.createObjectURL(file);
+      setCropSrc((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    },
+    [],
+  );
+
+  const closeCrop = useCallback(() => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }, []);
+
+  // Upload the cropped result. Optimistic preview + full-user sync, same as
+  // before — only the bytes now come from the crop canvas, not the raw file.
+  const uploadFile = useCallback(
+    async (file: File) => {
       const localUrl = URL.createObjectURL(file);
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -84,16 +108,12 @@ export function AvatarUpload({
       setIsWorking(true);
 
       try {
-        // The response carries the full assembled user; we forward it
-        // wholesale so the parent can sync both its local form state and
-        // the global useProfile cache in one shot.
         const { user } = await api.me.uploadAvatar(file);
         onAvatarPersisted(user);
         URL.revokeObjectURL(localUrl);
         setPreviewUrl(null);
         toast.success("Avatar updated");
       } catch (err) {
-        // Roll back the optimistic preview.
         URL.revokeObjectURL(localUrl);
         setPreviewUrl(null);
         const message =
@@ -108,6 +128,17 @@ export function AvatarUpload({
       }
     },
     [onAvatarPersisted],
+  );
+
+  const handleCropConfirm = useCallback(
+    (blob: Blob) => {
+      const file = new File([blob], "avatar.jpg", {
+        type: blob.type || "image/jpeg",
+      });
+      closeCrop();
+      void uploadFile(file);
+    },
+    [closeCrop, uploadFile],
   );
 
   const handleUploadClick = useCallback(() => {
@@ -211,6 +242,18 @@ export function AvatarUpload({
           <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
         </div>
       )}
+
+      <ImageCropDialog
+        open={cropSrc !== null}
+        imageSrc={cropSrc}
+        aspect={1}
+        cropShape="round"
+        title="Adjust your profile photo"
+        confirmLabel="Set photo"
+        maxOutputSize={512}
+        onCancel={closeCrop}
+        onConfirm={handleCropConfirm}
+      />
     </div>
   );
 }
