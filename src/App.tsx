@@ -41,6 +41,7 @@ const importPortfolioGallery = () => import("./components/gallery/PortfolioGalle
 const importProfilePage = () => import("./components/profile/ProfilePage");
 const importPortfolioViewer = () => import("./components/viewer/PortfolioViewer");
 const importPublicPortfolioPage = () => import("./components/public/PublicPortfolioPage");
+const importStylesPage = () => import("./components/styles/StylesPage");
 
 const LoginPage = lazy(() => importLoginPage().then((m) => ({ default: m.LoginPage })));
 const SignupPage = lazy(() => importSignupPage().then((m) => ({ default: m.SignupPage })));
@@ -54,6 +55,7 @@ const PortfolioViewer = lazy(() =>
 const PublicPortfolioPage = lazy(() =>
   importPublicPortfolioPage().then((m) => ({ default: m.PublicPortfolioPage })),
 );
+const StylesPage = lazy(() => importStylesPage().then((m) => ({ default: m.StylesPage })));
 
 const RouteFallback = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -69,6 +71,7 @@ const VALID_PAGE_IDS: ReadonlySet<PageId> = new Set([
   'profile',
   'portfolios',
   'portfolio-viewer',
+  'styles',
   'short-link',
 ]);
 
@@ -397,6 +400,9 @@ export default function App() {
                 />
               }
             />
+
+            {/* Component lab / style showcase — public. */}
+            <Route path={ROUTES.styles} element={<StylesPage />} />
 
             {/* Preview a template with dummy data — public. */}
             <Route

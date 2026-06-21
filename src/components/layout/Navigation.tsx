@@ -34,6 +34,7 @@ export function Navigation({
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'portfolios', label: 'Templates' },
+    { id: 'styles', label: 'Styles' },
   ];
 
 

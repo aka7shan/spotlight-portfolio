@@ -31,6 +31,7 @@ export const ROUTES = {
   signup: '/signup',
   profile: '/profile',
   portfolios: '/portfolios',
+  styles: '/styles',
   shortLink: '/p',
 } as const;
 
@@ -41,6 +42,7 @@ export type PageId =
   | 'profile'
   | 'portfolios'
   | 'portfolio-viewer'
+  | 'styles'
   | 'short-link';
 
 /**
@@ -71,6 +73,8 @@ export function pageIdToPath(page: PageId): string {
       return ROUTES.profile;
     case 'portfolios':
       return ROUTES.portfolios;
+    case 'styles':
+      return ROUTES.styles;
     case 'portfolio-viewer':
       // Shouldn't be reached — viewer routes need a templateId. Fall back
       // to the gallery so the user lands somewhere useful.
@@ -100,6 +104,7 @@ export function pathToPageId(pathname: string): PageId {
   if (pathname.startsWith(ROUTES.login)) return 'login';
   if (pathname.startsWith(ROUTES.signup)) return 'signup';
   if (pathname.startsWith(ROUTES.profile)) return 'profile';
+  if (pathname.startsWith(ROUTES.styles)) return 'styles';
   if (pathname.startsWith(`${ROUTES.shortLink}/`)) return 'short-link';
   if (/^\/portfolios\/[^/]+/.test(pathname)) return 'portfolio-viewer';
   if (pathname.startsWith(ROUTES.portfolios)) return 'portfolios';
