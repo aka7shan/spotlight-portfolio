@@ -48,6 +48,9 @@ export function generateFromUser(user: User): PortfolioData {
     certifications: user.certifications || [],
     achievements: user.achievements || [],
     languages: user.languages || [],
+    cv: user.cv,
+    salary: user.salary,
+    noticePeriod: user.noticePeriod,
   };
 }
 

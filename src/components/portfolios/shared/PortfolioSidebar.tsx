@@ -1,6 +1,8 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import styles from "./PortfolioSidebar.module.css";
+import { cn } from "../../ui/utils";
 
 export interface SidebarItem {
   id: string;
@@ -26,6 +28,16 @@ interface PortfolioSidebarProps {
   title?: string;
 }
 
+/**
+ * Responsive navigation for sidebar-based templates.
+ *
+ * - lg+ : a sticky left rail (256px) that pins while content scrolls.
+ * - <lg : a sticky top bar with a hamburger that toggles the section menu.
+ *
+ * The previous version was `position: fixed; width: 16rem` with no mobile
+ * affordance at all — on phones the rail overlapped the content and there was
+ * no way to switch sections.
+ */
 export function PortfolioSidebar({
   items,
   activeSection,
@@ -33,38 +45,111 @@ export function PortfolioSidebar({
   theme,
   title = "Portfolio",
 }: PortfolioSidebarProps) {
+  const [open, setOpen] = useState(false);
+  const reduce = useReducedMotion();
+
+  const handleSelect = (id: string) => {
+    onSectionChange(id);
+    setOpen(false);
+  };
+
+  const NavButton = ({ item }: { item: SidebarItem }) => {
+    const isActive = activeSection === item.id;
+    const Icon = item.icon;
+    return (
+      <button
+        type="button"
+        onClick={() => handleSelect(item.id)}
+        aria-current={isActive ? "page" : undefined}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200",
+          isActive ? theme.activeClass : theme.inactiveClass,
+        )}
+      >
+        <Icon className="w-5 h-5 shrink-0" />
+        <span className="truncate">{item.label}</span>
+      </button>
+    );
+  };
+
   return (
-    <aside className={`${styles.sidebar} ${theme.bg} ${theme.border}`}>
-      <div className={`${styles.logo} ${theme.border}`}>
-        <h1 className={`${styles.logoText} bg-gradient-to-r ${theme.logoGradient} bg-clip-text text-transparent`}>
-          {title}
-        </h1>
-      </div>
-
-      <nav className={styles.nav}>
-        <div className={styles.navList}>
-          {items.map((item) => (
-            <motion.button
-              key={item.id}
-              onClick={() => onSectionChange(item.id)}
-              whileHover={{ x: 5, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`${styles.navButton} ${
-                activeSection === item.id ? theme.activeClass : theme.inactiveClass
-              }`}
-            >
-              <item.icon className={styles.navIcon} />
-              <span className={styles.navLabel}>{item.label}</span>
-            </motion.button>
-          ))}
+    <>
+      {/* Mobile / tablet top bar */}
+      <div className={cn("lg:hidden sticky top-0 z-30 border-b", theme.bg, theme.border)}>
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1
+            className={cn(
+              "text-lg font-bold bg-gradient-to-r bg-clip-text text-transparent",
+              theme.logoGradient,
+            )}
+          >
+            {title}
+          </h1>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            className={cn(
+              "inline-flex h-10 w-10 items-center justify-center rounded-lg",
+              theme.inactiveClass,
+            )}
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
-      </nav>
-
-      <div className={`${styles.footer} ${theme.border}`}>
-        <p className={`${styles.footerText} ${theme.footerText}`}>
-          Built with Spotlight
-        </p>
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.nav
+              initial={reduce ? undefined : { height: 0, opacity: 0 }}
+              animate={reduce ? undefined : { height: "auto", opacity: 1 }}
+              exit={reduce ? undefined : { height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="overflow-hidden px-3 pb-3"
+            >
+              <div className="space-y-1">
+                {items.map((item) => (
+                  <NavButton key={item.id} item={item} />
+                ))}
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </div>
-    </aside>
+
+      {/* Desktop rail */}
+      <aside
+        className={cn(
+          "hidden lg:flex lg:flex-col lg:self-start lg:sticky lg:top-0 lg:h-screen w-64 shrink-0 border-r",
+          theme.bg,
+          theme.border,
+        )}
+      >
+        <div className={cn("p-6 border-b", theme.border)}>
+          <h1
+            className={cn(
+              "text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent",
+              theme.logoGradient,
+            )}
+          >
+            {title}
+          </h1>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-2">
+            {items.map((item) => (
+              <motion.div key={item.id} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
+                <NavButton item={item} />
+              </motion.div>
+            ))}
+          </div>
+        </nav>
+
+        <div className={cn("p-4 border-t", theme.border)}>
+          <p className={cn("text-xs text-center", theme.footerText)}>Built with Spotlight</p>
+        </div>
+      </aside>
+    </>
   );
 }

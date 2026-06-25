@@ -1,39 +1,15 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { motion } from "framer-motion";
-import {
-  Code,
-  Palette,
-  Briefcase,
-  Building,
-  Users,
-  Download,
-  Share2,
-  Eye,
-  Star,
-  ExternalLink,
-  Info,
-} from "lucide-react";
+import { Download, Share2, Eye, Star, ExternalLink, Info, Wand2 } from "lucide-react";
 import { ViewerToolbar } from "./ViewerToolbar";
-
-// Lazy-load portfolio templates so we don't ship 5 large layouts on first paint.
-const ClassicPortfolio = lazy(() =>
-  import("../portfolios/ClassicPortfolio").then(m => ({ default: m.ClassicPortfolio })),
-);
-const ModernTechPortfolio = lazy(() =>
-  import("../portfolios/ModernTechPortfolio").then(m => ({ default: m.ModernTechPortfolio })),
-);
-const CreativePortfolio = lazy(() =>
-  import("../portfolios/CreativePortfolio").then(m => ({ default: m.CreativePortfolio })),
-);
-const MinimalistPortfolio = lazy(() =>
-  import("../portfolios/MinimalistPortfolio").then(m => ({ default: m.MinimalistPortfolio })),
-);
-const CorporatePortfolio = lazy(() =>
-  import("../portfolios/CorporatePortfolio").then(m => ({ default: m.CorporatePortfolio })),
-);
+import { TEMPLATES } from "../portfolios/registry";
+import { PortfolioRenderer } from "../portfolios/PortfolioRenderer";
+import { PortfolioBuilder } from "../builder/PortfolioBuilder";
+import { resolveConfig } from "../portfolios/config/store";
+import type { PortfolioConfig } from "../portfolios/config/types";
 import type { PortfolioData, User } from "../../types/portfolio";
 import styles from "./PortfolioViewer.module.css";
 
@@ -47,52 +23,8 @@ interface PortfolioViewerProps {
   user?: User | null;
 }
 
-const TemplateFallback = () => (
-  <div className="flex items-center justify-center py-24">
-    <div className="h-10 w-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-  </div>
-);
-
 const sanitizeFileName = (name: string) =>
   name.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/_+/g, "_") || "portfolio";
-
-const templates = [
-  {
-    id: 'modern-tech',
-    name: 'Modern Tech',
-    category: 'Technology',
-    icon: Code,
-    description: 'Perfect for developers and tech professionals'
-  },
-  {
-    id: 'creative',
-    name: 'Creative Studio',
-    category: 'Creative',
-    icon: Palette,
-    description: 'Showcase your creative work with style'
-  },
-  {
-    id: 'minimalist',
-    name: 'Minimalist Pro',
-    category: 'Professional',
-    icon: Briefcase,
-    description: 'Clean and professional design'
-  },
-  {
-    id: 'corporate',
-    name: 'Corporate Elite',
-    category: 'Business',
-    icon: Building,
-    description: 'Professional template for business'
-  },
-  {
-    id: 'classic',
-    name: 'Classic Portfolio',
-    category: 'Traditional',
-    icon: Users,
-    description: 'Timeless design that never goes out of style'
-  }
-];
 
 export function PortfolioViewer({
   portfolioData,
@@ -105,32 +37,24 @@ export function PortfolioViewer({
 }: PortfolioViewerProps) {
   const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
+  const [config, setConfig] = useState<PortfolioConfig>(() =>
+    resolveConfig(user?.id, selectedTemplate),
+  );
+
+  // Reload the saved/preset config whenever the template (or user) changes, and
+  // drop out of customize mode so we don't edit a stale layout.
+  useEffect(() => {
+    setConfig(resolveConfig(user?.id, selectedTemplate));
+    setCustomizing(false);
+  }, [selectedTemplate, user?.id]);
 
   const currentTemplate = useMemo(
-    () => templates.find(t => t.id === selectedTemplate),
+    () => TEMPLATES.find(t => t.id === selectedTemplate),
     [selectedTemplate],
   );
 
-  const renderTemplate = () => {
-    const commonProps = { data: portfolioData, viewMode };
-
-    const Template = (() => {
-      switch (selectedTemplate) {
-        case 'modern-tech': return ModernTechPortfolio;
-        case 'creative': return CreativePortfolio;
-        case 'minimalist': return MinimalistPortfolio;
-        case 'corporate': return CorporatePortfolio;
-        case 'classic':
-        default: return ClassicPortfolio;
-      }
-    })();
-
-    return (
-      <Suspense fallback={<TemplateFallback />}>
-        <Template {...commonProps} />
-      </Suspense>
-    );
-  };
+  const renderTemplate = () => <PortfolioRenderer data={portfolioData} config={config} />;
 
   const handleExportData = useCallback(() => {
     try {
@@ -205,7 +129,7 @@ export function PortfolioViewer({
         user={user}
         viewMode={viewMode}
         portfolioData={portfolioData}
-        templates={templates}
+        templates={TEMPLATES}
         onBackToGallery={onBackToGallery}
         onTemplateSwitch={onTemplateSwitch}
         onEditProfile={onEditProfile}
@@ -218,6 +142,16 @@ export function PortfolioViewer({
       {/* Template Preview Area */}
       <div className={styles.previewArea}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {customizing ? (
+            <PortfolioBuilder
+              data={portfolioData}
+              config={config}
+              onChange={setConfig}
+              user={user}
+              onClose={() => setCustomizing(false)}
+            />
+          ) : (
+          <>
           {/* Info Banner */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -257,19 +191,29 @@ export function PortfolioViewer({
                       }
                     </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsFullscreen(true)}
-                    className={`${
-                      isPreviewMode 
-                        ? 'border-purple-200 text-purple-700 hover:bg-purple-100' 
-                        : 'border-blue-200 text-blue-700 hover:bg-blue-100'
-                    }`}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View Fullscreen
-                  </Button>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => setCustomizing(true)}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90"
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Customize
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsFullscreen(true)}
+                      className={`${
+                        isPreviewMode
+                          ? 'border-purple-200 text-purple-700 hover:bg-purple-100'
+                          : 'border-blue-200 text-blue-700 hover:bg-blue-100'
+                      }`}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Fullscreen
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -342,6 +286,8 @@ export function PortfolioViewer({
               </CardContent>
             </Card>
           </motion.div>
+          </>
+          )}
         </div>
       </div>
     </div>

@@ -40,4 +40,13 @@ export default tseslint.config([
       'react-refresh/only-export-components': 'off',
     },
   },
+  // Portfolio blocks are registry modules: each exports its layout variants
+  // (a `{ variantId -> component }` map) next to the components, same pattern
+  // as the ui primitives above.
+  {
+    files: ['src/components/portfolios/blocks/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ]);

@@ -1,8 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ApiError, api } from "../../lib/api";
 import type { User, PortfolioData } from "../../types/portfolio";
 import { portfolioDataManager } from "../../utils/portfolioDataManager";
+import { DEFAULT_TEMPLATE_ID, getPreset } from "../portfolios/registry";
+import { PortfolioRenderer } from "../portfolios/PortfolioRenderer";
+import { decodeConfigFromHash } from "../portfolios/config/share";
 
 /**
  * Public read-only portfolio at `/p/:code`.
@@ -29,45 +32,11 @@ import { portfolioDataManager } from "../../utils/portfolioDataManager";
  * already handle the work.
  */
 
-const ClassicPortfolio = lazy(() =>
-  import("../portfolios/ClassicPortfolio").then((m) => ({ default: m.ClassicPortfolio })),
-);
-const ModernTechPortfolio = lazy(() =>
-  import("../portfolios/ModernTechPortfolio").then((m) => ({ default: m.ModernTechPortfolio })),
-);
-const CreativePortfolio = lazy(() =>
-  import("../portfolios/CreativePortfolio").then((m) => ({ default: m.CreativePortfolio })),
-);
-const MinimalistPortfolio = lazy(() =>
-  import("../portfolios/MinimalistPortfolio").then((m) => ({ default: m.MinimalistPortfolio })),
-);
-const CorporatePortfolio = lazy(() =>
-  import("../portfolios/CorporatePortfolio").then((m) => ({ default: m.CorporatePortfolio })),
-);
-
-const DEFAULT_TEMPLATE = "classic";
-
 type FetchState =
   | { kind: "loading" }
   | { kind: "ok"; user: User; templateId: string }
   | { kind: "not_found" }
   | { kind: "error"; message: string };
-
-function selectTemplate(templateId: string) {
-  switch (templateId) {
-    case "modern-tech":
-      return ModernTechPortfolio;
-    case "creative":
-      return CreativePortfolio;
-    case "minimalist":
-      return MinimalistPortfolio;
-    case "corporate":
-      return CorporatePortfolio;
-    case "classic":
-    default:
-      return ClassicPortfolio;
-  }
-}
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -137,7 +106,7 @@ export function PublicPortfolioPage() {
         // so TS is happy. Anything that ever rendered this `id` would be
         // a bug.
         const user: User = { id: "public", ...res.user };
-        const templateId = res.user.activeTemplate ?? DEFAULT_TEMPLATE;
+        const templateId = res.user.activeTemplate ?? DEFAULT_TEMPLATE_ID;
         setState({ kind: "ok", user, templateId });
       })
       .catch((err: unknown) => {
@@ -192,12 +161,16 @@ export function PublicPortfolioPage() {
     );
   }
 
-  const Template = selectTemplate(state.templateId);
-  return (
-    <div className="min-h-screen bg-background">
-      <Suspense fallback={<Spinner />}>
-        {portfolioData && <Template data={portfolioData} viewMode="desktop" />}
-      </Suspense>
-    </div>
+  // A shared link can carry the owner's customizations in the URL hash
+  // (`#c=...`); otherwise fall back to the template's preset. (localStorage is
+  // owner-only, so it intentionally plays no role on the public page.)
+  const config =
+    decodeConfigFromHash(window.location.hash, state.templateId) ??
+    getPreset(state.templateId);
+
+  return portfolioData ? (
+    <PortfolioRenderer data={portfolioData} config={config} />
+  ) : (
+    <Spinner />
   );
 }

@@ -181,6 +181,11 @@ export interface PortfolioData {
   certifications: Certification[];
   achievements: Achievement[];
   languages: Language[];
+  // Carried through from User so templates can surface them (download CV,
+  // show compensation / availability) instead of silently dropping them.
+  cv?: CVData;
+  salary?: string;
+  noticePeriod?: string;
 }
 
 export interface PortfolioProps {
