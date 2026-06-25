@@ -1,15 +1,18 @@
-import { useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { SAMPLE_PHOTOS } from "./sampleData";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { motion, useSpring } from "framer-motion";
+import { SAMPLE_PHOTOS_SM } from "./sampleData";
 
 /**
  * ThreeDMagazine
  * --------------
  * An interactive flip-through magazine rendered entirely with CSS 3D transforms
- * (no WebGL). Leaves are stacked in a shared `preserve-3d` scene; each turned
- * leaf rotates about its spine (`transform-origin: left`) with a soft fold
- * gradient for depth. The whole book counter-rotates as you flip so the open
- * spread stays centred, and tilts toward the pointer for a parallax feel.
+ * (no WebGL). Leaves share a `preserve-3d` scene; each turned leaf rotates about
+ * its spine (`transform-origin: left`) with a spine-shadow gradient for depth.
+ * The book tilts toward the pointer for parallax.
+ *
+ * Performance: pointer tilt is driven by motion values + springs (set imperatively
+ * in the move handler) so moving the mouse never triggers a React re-render — only
+ * page turns update state.
  *
  * Click the right half to advance, the left half to go back.
  */
@@ -20,7 +23,7 @@ export interface ThreeDMagazineProps {
   className?: string;
 }
 
-export function ThreeDMagazine({ pages = SAMPLE_PHOTOS, coverTitle = "FIELD NOTES", className }: ThreeDMagazineProps) {
+export function ThreeDMagazine({ pages = SAMPLE_PHOTOS_SM, coverTitle = "FIELD NOTES", className }: ThreeDMagazineProps) {
   // Group images into leaves (front + back). Leaf 0's front is the cover.
   const leaves = useMemo(() => {
     const out: { front: string; back: string }[] = [];
@@ -30,24 +33,36 @@ export function ThreeDMagazine({ pages = SAMPLE_PHOTOS, coverTitle = "FIELD NOTE
     return out;
   }, [pages]);
 
-  const [turned, setTurned] = useState(0); // how many leaves are flipped
+  const [turned, setTurned] = useState(0);
   const tiltRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
-  const onMove = (e: React.MouseEvent) => {
-    const el = tiltRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const nx = (e.clientX - r.left) / r.width - 0.5;
-    const ny = (e.clientY - r.top) / r.height - 0.5;
-    setTilt({ x: -ny * 12, y: nx * 16 });
-  };
+  // Pointer tilt as motion values → no re-renders while moving.
+  const rotateX = useSpring(8, { stiffness: 120, damping: 18 });
+  const rotateY = useSpring(0, { stiffness: 120, damping: 18 });
+
+  const onMove = useCallback(
+    (e: React.MouseEvent) => {
+      const el = tiltRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const nx = (e.clientX - r.left) / r.width - 0.5;
+      const ny = (e.clientY - r.top) / r.height - 0.5;
+      rotateX.set(8 - ny * 12);
+      rotateY.set(nx * 16);
+    },
+    [rotateX, rotateY],
+  );
+
+  const onLeave = useCallback(() => {
+    rotateX.set(8);
+    rotateY.set(0);
+  }, [rotateX, rotateY]);
 
   const total = leaves.length;
   const next = () => setTurned((t) => Math.min(total, t + 1));
   const prev = () => setTurned((t) => Math.max(0, t - 1));
 
-  // Shift the book left→right as it opens so the spread stays centred.
+  // Shift the book so the open spread stays centred.
   const opened = turned > 0 && turned < total;
   const shiftX = opened ? "25%" : turned === 0 ? "0%" : "50%";
 
@@ -55,17 +70,16 @@ export function ThreeDMagazine({ pages = SAMPLE_PHOTOS, coverTitle = "FIELD NOTE
     <div
       ref={tiltRef}
       onMouseMove={onMove}
-      onMouseLeave={() => setTilt({ x: 0, y: 0 })}
+      onMouseLeave={onLeave}
       className={`flex h-full w-full items-center justify-center overflow-hidden ${className ?? ""}`}
       style={{ perspective: 2000 }}
     >
       <motion.div
         className="relative [transform-style:preserve-3d]"
-        style={{ width: 280, height: 380 }}
-        animate={{ rotateX: 8 + tilt.x, rotateY: tilt.y, x: shiftX }}
+        style={{ width: 280, height: 380, rotateX, rotateY }}
+        animate={{ x: shiftX }}
         transition={{ type: "spring", stiffness: 120, damping: 18 }}
       >
-        {/* Floor shadow */}
         <div className="absolute -bottom-8 left-1/2 h-6 w-[120%] -translate-x-1/2 rounded-[50%] bg-black/25 blur-xl" />
 
         {leaves.map((leaf, i) => {
@@ -73,12 +87,11 @@ export function ThreeDMagazine({ pages = SAMPLE_PHOTOS, coverTitle = "FIELD NOTE
           return (
             <motion.div
               key={i}
-              className="absolute inset-0 origin-left [transform-style:preserve-3d]"
+              className="absolute inset-0 origin-left [transform-style:preserve-3d] [will-change:transform]"
               style={{ zIndex: isTurned ? i : total - i }}
               animate={{ rotateY: isTurned ? -178 : 0 }}
               transition={{ type: "spring", stiffness: 90, damping: 16, mass: 0.9 }}
             >
-              {/* Front of leaf */}
               <Face image={leaf.front} side="front">
                 {i === 0 && (
                   <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/10 via-transparent to-black/60 p-5 text-white">
@@ -87,13 +100,11 @@ export function ThreeDMagazine({ pages = SAMPLE_PHOTOS, coverTitle = "FIELD NOTE
                   </div>
                 )}
               </Face>
-              {/* Back of leaf */}
               <Face image={leaf.back} side="back" />
             </motion.div>
           );
         })}
 
-        {/* Click zones */}
         <button
           type="button"
           aria-label="Previous page"
@@ -119,8 +130,7 @@ function Face({ image, side, children }: { image: string; side: "front" | "back"
       className="absolute inset-0 overflow-hidden rounded-r-md bg-neutral-200 shadow-[0_10px_30px_rgba(0,0,0,0.25)] [backface-visibility:hidden]"
       style={side === "back" ? { transform: "rotateY(180deg)" } : undefined}
     >
-      <img src={image} alt="" className="h-full w-full object-cover" draggable={false} />
-      {/* Spine shading for paper depth. */}
+      <img src={image} alt="" className="h-full w-full object-cover" draggable={false} loading="lazy" />
       <div
         className="pointer-events-none absolute inset-y-0 left-0 w-1/3"
         style={{

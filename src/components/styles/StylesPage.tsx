@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { cn } from "../ui/utils";
-import { SAMPLE_PHOTOS } from "./sampleData";
+import { SAMPLE_FACES, SAMPLE_PHOTOS } from "./sampleData";
 import { PolaroidFlipCard } from "./PolaroidFlipCard";
 import { DepthBlurCarousel } from "./DepthBlurCarousel";
 import { DirectionalCursor } from "./DirectionalCursor";
@@ -13,6 +13,48 @@ import { ThreeDMagazine } from "./ThreeDMagazine";
 import { LorenzoInteractivePortrait } from "./LorenzoInteractivePortrait";
 import { SubmenuSidebarNav } from "./SubmenuSidebarNav";
 import { DocumentCard } from "./DocumentCard";
+import { EyeFollowButton } from "./EyeFollowButton";
+import { WaveButton } from "./WaveButton";
+import { HighlightMarkerCycle } from "./HighlightMarkerCycle";
+import { WavyTicker } from "./WavyTicker";
+import { VelocityCarousel } from "./VelocityCarousel";
+import { ElevatedCarousel } from "./ElevatedCarousel";
+import { PillCarousel } from "./PillCarousel";
+import { ServiceCarousel3D } from "./ServiceCarousel3D";
+import { VideoCarousel } from "./VideoCarousel";
+import { DitheringHover } from "./DitheringHover";
+import { HoverBloom } from "./HoverBloom";
+import { GlassShowcase } from "./GlassShowcase";
+import { ExpandableDrawers } from "./ExpandableDrawers";
+
+/** Greeting pills + circular faces for the WavyTicker demo. */
+const TICKER_GREETINGS: { text: string; bg: string }[] = [
+  { text: "hello!", bg: "#cdeccd" },
+  { text: "नमस्ते", bg: "#f7d6de" },
+  { text: "salaam!", bg: "#bfe85f" },
+  { text: "こんにちは", bg: "#bcd9f5" },
+  { text: "hola!", bg: "#cfeede" },
+  { text: "olá!", bg: "#f6d8b8" },
+  { text: "hej!", bg: "#f3c9d4" },
+  { text: "bonjour!", bg: "#bcd9f5" },
+  { text: "aluu!", bg: "#f7d6de" },
+];
+
+const TICKER_ITEMS: ReactNode[] = TICKER_GREETINGS.flatMap((g, i) => [
+  <span
+    key={`g-${i}`}
+    className="grid h-[72px] place-items-center whitespace-nowrap rounded-full px-7 font-mono text-2xl text-neutral-800"
+    style={{ background: g.bg }}
+  >
+    {g.text}
+  </span>,
+  <img
+    key={`f-${i}`}
+    src={SAMPLE_FACES[i % SAMPLE_FACES.length]}
+    alt=""
+    className="h-[72px] w-[72px] rounded-full object-cover"
+  />,
+]);
 
 /**
  * StylesPage
@@ -64,12 +106,14 @@ export function StylesPage() {
           </DemoCard>
 
           <DemoCard name="Directional Cursor" tag="pointer" desc="A custom cursor that rotates toward its direction of travel.">
-            <DirectionalCursor className="h-full">
-              <div className="flex h-full flex-col items-center justify-center gap-2 bg-neutral-950 text-center text-white">
-                <span className="text-lg font-semibold">Move around in here</span>
-                <span className="text-sm text-white/50">The arrow leads your motion</span>
-              </div>
-            </DirectionalCursor>
+            <div className="h-[320px]">
+              <DirectionalCursor className="h-full">
+                <div className="flex h-full flex-col items-center justify-center gap-2 bg-neutral-950 text-center text-white">
+                  <span className="text-lg font-semibold">Move around in here</span>
+                  <span className="text-sm text-white/50">The arrow leads your motion</span>
+                </div>
+              </DirectionalCursor>
+            </div>
           </DemoCard>
         </div>
 
@@ -99,6 +143,98 @@ export function StylesPage() {
           <DemoCard name="Submenu Sidebar Nav" tag="click" desc="A slide-in menu with drill-down submenus and staggered links.">
             <div className="h-[420px]">
               <SubmenuSidebarNav />
+            </div>
+          </DemoCard>
+        </div>
+
+        <SectionTitle className="mt-14">Buttons &amp; micro-interactions</SectionTitle>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <DemoCard name="Eye Follow Button" tag="pointer" desc="A button with googly eyes whose pupils track the cursor anywhere on screen.">
+            <div className="flex h-[220px] items-center justify-center bg-neutral-100">
+              <EyeFollowButton />
+            </div>
+          </DemoCard>
+
+          <DemoCard name="Wave Button" tag="hover · press" desc="Coloured waves rise through the button on hover; the label swaps as they pass.">
+            <div className="flex h-[220px] items-center justify-center bg-neutral-100">
+              <WaveButton />
+            </div>
+          </DemoCard>
+
+          <DemoCard name="Highlight Marker Cycle" tag="auto" desc="A marker sweeps across to swap the cycling word in place.">
+            <div className="flex h-[220px] items-center justify-center bg-neutral-100 p-6">
+              <HighlightMarkerCycle />
+            </div>
+          </DemoCard>
+        </div>
+
+        <SectionTitle className="mt-14">Marquee</SectionTitle>
+        <div className="grid grid-cols-1 gap-6">
+          <DemoCard name="Wavy Ticker" tag="auto · hover" desc="An infinite marquee where items bob along a sine wave. Hover to slow it down.">
+            <div className="flex h-[220px] items-center bg-gradient-to-b from-neutral-50 to-neutral-200">
+              <WavyTicker items={TICKER_ITEMS} />
+            </div>
+          </DemoCard>
+        </div>
+
+        <SectionTitle className="mt-14">Carousels</SectionTitle>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <DemoCard name="Velocity Carousel" tag="drag · keys" desc="A coverflow of cards; the centred card scales up and reveals its caption.">
+            <div className="h-[480px]">
+              <VelocityCarousel />
+            </div>
+          </DemoCard>
+
+          <DemoCard name="Pill Carousel" tag="auto · click" desc="Pill cards drift along a diagonal arc with depth blur and a floating CTA.">
+            <div className="h-[480px]">
+              <PillCarousel />
+            </div>
+          </DemoCard>
+        </div>
+        <div className="mt-6 grid grid-cols-1 gap-6">
+          <DemoCard name="Elevated Carousel" tag="drag · click" desc="A draggable row where the active card lifts and reveals its title and CTA.">
+            <div className="h-[540px] bg-white">
+              <ElevatedCarousel />
+            </div>
+          </DemoCard>
+
+          <DemoCard name="3D Service Carousel" tag="auto · arrows" desc="Service cards mounted on a rotating cylinder. Pauses on hover.">
+            <ServiceCarousel3D />
+          </DemoCard>
+
+          <DemoCard name="Video Carousel" tag="drag · play" desc="A 3D video deck — only the active clip plays; toggle sound on the front card.">
+            <div className="h-[400px] bg-neutral-950">
+              <VideoCarousel />
+            </div>
+          </DemoCard>
+        </div>
+
+        <SectionTitle className="mt-14">Hover canvas</SectionTitle>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <DemoCard name="Dithering Hover" tag="hover" desc="A Bayer-dither zone follows the cursor, quantising the image to black &amp; white.">
+            <div className="h-[420px]">
+              <DitheringHover />
+            </div>
+          </DemoCard>
+
+          <DemoCard name="Hover Bloom" tag="move · click" desc="Generative watercolour flowers sprout along the pointer's path.">
+            <div className="h-[420px]">
+              <HoverBloom />
+            </div>
+          </DemoCard>
+        </div>
+
+        <SectionTitle className="mt-14">Showcases</SectionTitle>
+        <div className="grid grid-cols-1 gap-6">
+          <DemoCard name="Glass Showcase" tag="hover" desc="A frosted-glass list over a reactive backdrop; rows expand to show detail.">
+            <div className="h-[520px]">
+              <GlassShowcase />
+            </div>
+          </DemoCard>
+
+          <DemoCard name="Expandable Drawers" tag="click" desc="A coloured process accordion — open a drawer to reveal its sub-points.">
+            <div className="bg-neutral-100 p-6">
+              <ExpandableDrawers />
             </div>
           </DemoCard>
         </div>
@@ -133,7 +269,7 @@ export function StylesPage() {
       </FullBleedLabel>
 
       <footer className="border-t border-border py-10 text-center text-sm text-muted-foreground">
-        11 components · recreated natively · ready to compose
+        24 components · recreated natively · ready to compose
       </footer>
     </div>
   );

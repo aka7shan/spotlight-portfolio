@@ -1,18 +1,16 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronRight, Menu, X } from "lucide-react";
 
 /**
  * SubmenuSidebarNav
  * -----------------
  * A slide-in sidebar menu with drill-down submenus. Top-level entries that own
  * a submenu push a second panel in from the right; a back affordance returns to
- * the root. Panels and rows are staggered with `AnimatePresence` so opening the
- * menu cascades the links in.
+ * the root. Panels cross-slide and their rows stagger in.
  *
  * Rendered inside its own positioned container (not `position: fixed`) so it can
- * live inside a card on the showcase; set `inline={false}` to pin it to a real
- * layout corner instead.
+ * live inside a card on the showcase.
  */
 export interface NavSubLink {
   label: string;
@@ -58,52 +56,60 @@ const DEFAULT_ITEMS: readonly NavItem[] = [
 ];
 
 const panelVariants = {
-  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
+  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
 };
 
 export function SubmenuSidebarNav({ items = DEFAULT_ITEMS, title = "Menu", className }: SubmenuSidebarNavProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
   const activeItem = activeIndex != null ? items[activeIndex] : null;
 
-  return (
-    <div className={`relative h-full w-full overflow-hidden rounded-xl bg-neutral-950 text-white ${className ?? ""}`}>
-      {/* Trigger */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="absolute left-4 top-4 z-30 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur transition hover:bg-white/20"
-      >
-        {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        {open ? "Close" : "Menu"}
-      </button>
+  const close = () => {
+    setOpen(false);
+    // Reset the drill-down after the drawer finishes sliding out.
+    window.setTimeout(() => setActiveIndex(null), 300);
+  };
 
-      <div className="flex h-full items-center justify-center text-white/30">
-        <span className="text-sm">Tap “Menu”.</span>
+  return (
+    <div className={`relative h-full w-full overflow-hidden bg-neutral-950 text-white ${className ?? ""}`}>
+      {/* Idle state */}
+      <div className="flex h-full flex-col items-start justify-between p-6">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium backdrop-blur transition hover:bg-white/20"
+        >
+          <Menu className="h-4 w-4" />
+          Menu
+        </button>
+        <div className="text-white/30">
+          <p className="text-2xl font-semibold tracking-tight text-white/60">Studio Aria</p>
+          <p className="text-sm">Open the menu to explore.</p>
+        </div>
       </div>
 
       <AnimatePresence>
         {open && (
           <>
             <motion.div
-              className="absolute inset-0 z-10 bg-black/50"
+              className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
+              onClick={close}
             />
             <motion.aside
-              className="absolute right-0 top-0 z-20 flex h-full w-[78%] max-w-[320px] flex-col bg-neutral-900 shadow-2xl"
-              initial={{ x: "100%" }}
+              className="absolute left-0 top-0 z-20 flex h-full w-[86%] max-w-[340px] flex-col bg-neutral-900 shadow-2xl"
+              initial={{ x: "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 34 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 360, damping: 38 }}
             >
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <AnimatePresence mode="wait">
+              {/* Header */}
+              <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
+                <AnimatePresence mode="wait" initial={false}>
                   {activeItem ? (
                     <motion.button
                       key="back"
@@ -112,7 +118,7 @@ export function SubmenuSidebarNav({ items = DEFAULT_ITEMS, title = "Menu", class
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -8 }}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white"
+                      className="inline-flex items-center gap-2 text-base font-semibold text-white hover:text-white"
                     >
                       <ArrowLeft className="h-4 w-4" /> {activeItem.label}
                     </motion.button>
@@ -122,16 +128,26 @@ export function SubmenuSidebarNav({ items = DEFAULT_ITEMS, title = "Menu", class
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50"
+                      className="text-xs font-semibold uppercase tracking-[0.3em] text-white/45"
                     >
                       {title}
                     </motion.span>
                   )}
                 </AnimatePresence>
+
+                <button
+                  type="button"
+                  onClick={close}
+                  aria-label="Close menu"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
+              {/* Panels */}
               <div className="relative flex-1 overflow-hidden">
-                <AnimatePresence custom={activeItem ? 1 : -1} mode="popLayout">
+                <AnimatePresence custom={activeItem ? 1 : -1} mode="popLayout" initial={false}>
                   {!activeItem ? (
                     <motion.ul
                       key="root"
@@ -140,26 +156,32 @@ export function SubmenuSidebarNav({ items = DEFAULT_ITEMS, title = "Menu", class
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                      className="absolute inset-0 flex flex-col gap-1 p-3"
+                      transition={{ type: "spring", stiffness: 420, damping: 40 }}
+                      className="absolute inset-0 flex flex-col gap-1 overflow-y-auto p-3"
                     >
                       {items.map((item, i) => (
                         <motion.li
                           key={item.label}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.05 + i * 0.05 }}
+                          initial={{ opacity: 0, x: -16 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.06 + i * 0.05, type: "spring", stiffness: 500, damping: 40 }}
                         >
                           <button
                             type="button"
                             onClick={() => (item.submenu ? setActiveIndex(i) : undefined)}
-                            className="group flex w-full items-center justify-between rounded-lg px-3 py-3 text-left transition hover:bg-white/5"
+                            className="group flex w-full items-center justify-between rounded-xl px-4 py-3.5 text-left transition hover:bg-white/[0.07]"
                           >
-                            <span>
-                              <span className="block text-lg font-semibold">{item.label}</span>
-                              {item.tagline && <span className="block text-xs text-white/45">{item.tagline}</span>}
+                            <span className="min-w-0">
+                              <span className="block text-xl font-semibold leading-tight">{item.label}</span>
+                              {item.tagline && (
+                                <span className="mt-0.5 block text-xs text-white/45">{item.tagline}</span>
+                              )}
                             </span>
-                            <ArrowUpRight className="h-4 w-4 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-white" />
+                            {item.submenu ? (
+                              <ChevronRight className="h-5 w-5 shrink-0 text-white/35 transition group-hover:translate-x-0.5 group-hover:text-white" />
+                            ) : (
+                              <ArrowUpRight className="h-5 w-5 shrink-0 text-white/35 transition group-hover:text-white" />
+                            )}
                           </button>
                         </motion.li>
                       ))}
@@ -172,11 +194,11 @@ export function SubmenuSidebarNav({ items = DEFAULT_ITEMS, title = "Menu", class
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      transition={{ type: "spring", stiffness: 320, damping: 34 }}
-                      className="absolute inset-0 flex flex-col gap-1 p-3"
+                      transition={{ type: "spring", stiffness: 420, damping: 40 }}
+                      className="absolute inset-0 flex flex-col gap-1 overflow-y-auto p-3"
                     >
                       {activeItem.submenu?.tagline && (
-                        <p className="px-3 pb-2 pt-1 text-xs uppercase tracking-widest text-white/40">
+                        <p className="px-4 pb-2 pt-2 text-[11px] uppercase tracking-[0.2em] text-white/35">
                           {activeItem.submenu.tagline}
                         </p>
                       )}
@@ -184,13 +206,13 @@ export function SubmenuSidebarNav({ items = DEFAULT_ITEMS, title = "Menu", class
                         <motion.a
                           key={link.label}
                           href={link.href ?? "#"}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.04 + i * 0.05 }}
-                          className="flex items-center justify-between rounded-lg px-3 py-3 text-base font-medium text-white/85 transition hover:bg-white/5 hover:text-white"
+                          initial={{ opacity: 0, x: 16 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.05 + i * 0.05, type: "spring", stiffness: 500, damping: 40 }}
+                          className="flex items-center justify-between rounded-xl px-4 py-3.5 text-lg font-medium text-white/85 transition hover:bg-white/[0.07] hover:text-white"
                         >
                           {link.label}
-                          <ArrowUpRight className="h-4 w-4 text-white/40" />
+                          <ArrowUpRight className="h-4 w-4 text-white/35" />
                         </motion.a>
                       ))}
                     </motion.div>

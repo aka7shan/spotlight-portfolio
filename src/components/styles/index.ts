@@ -31,3 +31,42 @@ export type { SubmenuSidebarNavProps, NavItem, NavSubLink } from "./SubmenuSideb
 
 export { DocumentCard } from "./DocumentCard";
 export type { DocumentCardProps } from "./DocumentCard";
+
+export { EyeFollowButton } from "./EyeFollowButton";
+export type { EyeFollowButtonProps } from "./EyeFollowButton";
+
+export { WaveButton } from "./WaveButton";
+export type { WaveButtonProps } from "./WaveButton";
+
+export { HighlightMarkerCycle } from "./HighlightMarkerCycle";
+export type { HighlightMarkerCycleProps } from "./HighlightMarkerCycle";
+
+export { WavyTicker } from "./WavyTicker";
+export type { WavyTickerProps } from "./WavyTicker";
+
+export { VelocityCarousel } from "./VelocityCarousel";
+export type { VelocityCarouselProps, VelocityCard } from "./VelocityCarousel";
+
+export { ElevatedCarousel } from "./ElevatedCarousel";
+export type { ElevatedCarouselProps, ElevatedItem } from "./ElevatedCarousel";
+
+export { PillCarousel } from "./PillCarousel";
+export type { PillCarouselProps, PillItem } from "./PillCarousel";
+
+export { ServiceCarousel3D } from "./ServiceCarousel3D";
+export type { ServiceCarousel3DProps, ServiceCard } from "./ServiceCarousel3D";
+
+export { VideoCarousel } from "./VideoCarousel";
+export type { VideoCarouselProps, VideoItem } from "./VideoCarousel";
+
+export { DitheringHover } from "./DitheringHover";
+export type { DitheringHoverProps } from "./DitheringHover";
+
+export { HoverBloom } from "./HoverBloom";
+export type { HoverBloomProps } from "./HoverBloom";
+
+export { GlassShowcase } from "./GlassShowcase";
+export type { GlassShowcaseProps, GlassItem } from "./GlassShowcase";
+
+export { ExpandableDrawers } from "./ExpandableDrawers";
+export type { ExpandableDrawersProps, DrawerItem, DrawerPoint } from "./ExpandableDrawers";

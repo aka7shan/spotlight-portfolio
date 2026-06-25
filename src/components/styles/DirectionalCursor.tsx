@@ -25,6 +25,9 @@ const SPRING = { damping: 45, stiffness: 400, mass: 1, restDelta: 0.001 } as con
 export function DirectionalCursor({ children, size = 1, color = "#111111", className }: DirectionalCursorProps) {
   const areaRef = useRef<HTMLDivElement>(null);
   const [inside, setInside] = useState(false);
+  // Only reveal the cursor once it has a real position (after the first move),
+  // otherwise it briefly parks in the top-left corner.
+  const [visible, setVisible] = useState(false);
 
   const x = useSpring(0, SPRING);
   const y = useSpring(0, SPRING);
@@ -38,6 +41,7 @@ export function DirectionalCursor({ children, size = 1, color = "#111111", class
   const prevAngle = useRef(0);
   const accumRotation = useRef(0);
   const idleTimer = useRef<number | null>(null);
+  const hasMoved = useRef(false);
 
   useEffect(() => {
     const el = areaRef.current;
@@ -47,6 +51,14 @@ export function DirectionalCursor({ children, size = 1, color = "#111111", class
       const rect = el.getBoundingClientRect();
       const localX = e.clientX - rect.left;
       const localY = e.clientY - rect.top;
+      if (!hasMoved.current) {
+        // Seed the springs at the entry point so the arrow doesn't streak in
+        // from the corner on first appearance.
+        hasMoved.current = true;
+        x.jump(localX);
+        y.jump(localY);
+        setVisible(true);
+      }
       x.set(localX);
       y.set(localY);
 
@@ -109,14 +121,18 @@ export function DirectionalCursor({ children, size = 1, color = "#111111", class
     <div
       ref={areaRef}
       onMouseEnter={() => setInside(true)}
-      onMouseLeave={() => setInside(false)}
+      onMouseLeave={() => {
+        setInside(false);
+        setVisible(false);
+        hasMoved.current = false;
+      }}
       className={`relative ${inside ? "cursor-none" : ""} ${className ?? ""}`}
     >
       {children}
       <motion.div
         aria-hidden
         className="pointer-events-none absolute left-0 top-0 z-[100] will-change-transform"
-        style={{ x, y, translateX: tx, translateY: ty, rotate, scale, opacity: inside ? 1 : 0 }}
+        style={{ x, y, translateX: tx, translateY: ty, rotate, scale, opacity: inside && visible ? 1 : 0 }}
       >
         <svg width={50} height={54} viewBox="0 0 50 54" fill="none">
           <path

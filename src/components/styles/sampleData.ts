@@ -29,6 +29,46 @@ export const SAMPLE_PHOTOS: readonly string[] = [
   u("1506744038136-46273834b3fb"), // lake landscape
 ];
 
+/** Smaller variants for thumbnails / dense surfaces (e.g. the magazine pages). */
+export const SAMPLE_PHOTOS_SM: readonly string[] = SAMPLE_PHOTOS.map((url) =>
+  url.replace("w=1200", "w=560"),
+);
+
+/** Square portrait photos for avatars / ticker faces. */
+export const SAMPLE_FACES: readonly string[] = [
+  "1500648767791-00dcc994a43e",
+  "1494790108377-be9c29b29330",
+  "1633332755192-727a05c4013d",
+  "1438761681033-6461ffad8d80",
+  "1507003211169-0a1dd7228f2d",
+  "1534528741775-53994a69daeb",
+].map((id) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=200&h=200&q=80`);
+
+export interface SampleVideo {
+  src: string;
+  poster: string;
+}
+
+/** Public sample MP4s (Google's gtv-videos bucket) with Unsplash posters. */
+export const SAMPLE_VIDEOS: readonly SampleVideo[] = [
+  {
+    src: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    poster: u("1500530855697-b586d89ba3ee", 800),
+  },
+  {
+    src: "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    poster: u("1469474968028-56623f02e42e", 800),
+  },
+  {
+    src: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    poster: u("1470071459604-3b5ec3a7fe05", 800),
+  },
+  {
+    src: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+    poster: u("1506744038136-46273834b3fb", 800),
+  },
+];
+
 /** CSS gradient strings used as graceful fallbacks (e.g. in the carousel). */
 export const SAMPLE_GRADIENTS: readonly string[] = [
   "linear-gradient(135deg, #1e3a8a, #3b82f6)",

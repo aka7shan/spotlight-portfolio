@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { motion, useScroll, useSpring, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 /**
  * ScrollZoomReveal
@@ -7,11 +7,12 @@ import { motion, useScroll, useSpring, useTransform } from "framer-motion";
  * A sticky "showreel" section. As the tall outer section scrolls past, a small
  * rounded card grows to fill the viewport while its corner radius melts to 0.
  * Side labels frame the card and a centred call-to-action fades up once the
- * image is roughly full-bleed. Width/height/radius are spring-eased off scroll
- * progress so the zoom glides instead of tracking the wheel 1:1.
+ * image is near full-bleed.
  *
- * Because the effect needs real scroll distance, render it on a page (or a
- * scroll container) rather than a short fixed box.
+ * The growing card is absolutely centred (out of flow) so expanding it never
+ * pushes the side labels around, and width/height/radius are linked directly to
+ * scroll progress (no spring) so the zoom tracks the wheel exactly — no
+ * overshoot, lag or jitter.
  */
 export interface ScrollZoomRevealProps {
   image: string;
@@ -38,31 +39,41 @@ export function ScrollZoomReveal({
   buttonBgColor = "#111111",
   buttonTextColor = "#ffffff",
   icon = "play",
-  scrollVh = 320,
+  scrollVh = 300,
   className,
 }: ScrollZoomRevealProps) {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
 
-  const spring = { stiffness: 90, damping: 25, mass: 0.6 } as const;
-  const width = useSpring(useTransform(scrollYProgress, [0, 1], ["16vw", "100vw"]), spring);
-  const height = useSpring(useTransform(scrollYProgress, [0, 1], ["12vh", "100vh"]), spring);
-  const radius = useSpring(useTransform(scrollYProgress, [0, 1], [44, 0]), spring);
-
-  const ctaOpacity = useTransform(scrollYProgress, [0.45, 0.62], [0, 1]);
-  const ctaY = useTransform(scrollYProgress, [0.45, 0.62], [50, 0]);
+  // Direct, scroll-linked values (no spring) keep the zoom rock-steady.
+  const width = useTransform(scrollYProgress, [0, 1], ["18vw", "100vw"]);
+  const height = useTransform(scrollYProgress, [0, 1], ["14vh", "100vh"]);
+  const radius = useTransform(scrollYProgress, [0, 1], [40, 0]);
+  const ctaOpacity = useTransform(scrollYProgress, [0.5, 0.7], [0, 1]);
+  const ctaY = useTransform(scrollYProgress, [0.5, 0.7], [40, 0]);
 
   return (
     <section ref={ref} className={`relative ${className ?? ""}`} style={{ height: `${scrollVh}vh` }}>
-      <div className="sticky top-0 flex h-screen items-center justify-center gap-5 overflow-hidden px-5">
+      <div className="sticky top-0 h-screen overflow-hidden">
+        {/* Side labels — absolutely placed so the growing card never moves them. */}
         <span
-          className="hidden shrink-0 whitespace-nowrap text-right text-4xl font-medium md:block lg:text-5xl"
-          style={{ color: textColor, width: 220 }}
+          className="absolute left-[6vw] top-1/2 z-[1] hidden -translate-y-1/2 whitespace-nowrap text-4xl font-medium md:block lg:text-5xl"
+          style={{ color: textColor }}
         >
           {leftText}
         </span>
+        <span
+          className="absolute right-[6vw] top-1/2 z-[1] hidden -translate-y-1/2 whitespace-nowrap text-4xl font-medium md:block lg:text-5xl"
+          style={{ color: textColor }}
+        >
+          {rightText}
+        </span>
 
-        <motion.div className="relative shrink-0 overflow-hidden" style={{ width, height, borderRadius: radius }}>
+        {/* Growing card, centred and out of flow. */}
+        <motion.div
+          className="absolute left-1/2 top-1/2 z-[2] overflow-hidden"
+          style={{ width, height, borderRadius: radius, x: "-50%", y: "-50%" }}
+        >
           <img
             src={image}
             alt="Showreel"
@@ -70,20 +81,13 @@ export function ScrollZoomReveal({
           />
           <motion.a
             href={buttonLink}
-            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 whitespace-nowrap text-3xl font-medium no-underline lg:text-5xl"
-            style={{ color: buttonTextColor, opacity: ctaOpacity, y: ctaY }}
+            className="absolute left-1/2 top-1/2 flex items-center gap-3 whitespace-nowrap text-3xl font-medium no-underline lg:text-5xl"
+            style={{ x: "-50%", y: "-50%", color: buttonTextColor, opacity: ctaOpacity, translateY: ctaY }}
           >
             {buttonText}
             <CtaIcon icon={icon} bg={buttonBgColor} fg={buttonTextColor} />
           </motion.a>
         </motion.div>
-
-        <span
-          className="hidden shrink-0 whitespace-nowrap text-left text-4xl font-medium md:block lg:text-5xl"
-          style={{ color: textColor, width: 220 }}
-        >
-          {rightText}
-        </span>
       </div>
     </section>
   );
