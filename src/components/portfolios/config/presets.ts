@@ -25,6 +25,7 @@ export const PORTFOLIO_PRESETS: Record<string, PortfolioConfig> = {
   classic: {
     templateId: "classic",
     theme: { preset: "classic" },
+    layout: "sidebar",
     showNav: true,
     blocks: buildBlocks({
       hero: "split",
@@ -39,6 +40,7 @@ export const PORTFOLIO_PRESETS: Record<string, PortfolioConfig> = {
   "modern-tech": {
     templateId: "modern-tech",
     theme: { preset: "modern-tech" },
+    layout: "topbar",
     showNav: true,
     blocks: buildBlocks({
       hero: "split",
@@ -53,9 +55,10 @@ export const PORTFOLIO_PRESETS: Record<string, PortfolioConfig> = {
   creative: {
     templateId: "creative",
     theme: { preset: "creative" },
+    layout: "topbar",
     showNav: true,
     blocks: buildBlocks({
-      hero: "centered",
+      hero: "cover",
       about: "text",
       skills: "cloud",
       projects: "list",
@@ -67,7 +70,8 @@ export const PORTFOLIO_PRESETS: Record<string, PortfolioConfig> = {
   minimalist: {
     templateId: "minimalist",
     theme: { preset: "minimalist" },
-    showNav: true,
+    layout: "minimal",
+    showNav: false,
     blocks: buildBlocks({
       hero: "minimal",
       about: "text",
@@ -81,6 +85,7 @@ export const PORTFOLIO_PRESETS: Record<string, PortfolioConfig> = {
   corporate: {
     templateId: "corporate",
     theme: { preset: "corporate" },
+    layout: "topbar",
     showNav: true,
     blocks: buildBlocks({
       hero: "split",

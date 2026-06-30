@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -47,11 +47,29 @@ export function PortfolioSidebar({
 }: PortfolioSidebarProps) {
   const [open, setOpen] = useState(false);
   const reduce = useReducedMotion();
+  const navRef = useRef<HTMLElement>(null);
 
   const handleSelect = (id: string) => {
     onSectionChange(id);
     setOpen(false);
   };
+
+  // Keep the active item visible inside the rail as scroll-spy moves it —
+  // adjusting only the rail's own scrollTop (never the page) so there's no
+  // feedback loop with the section scroll.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const el = nav.querySelector<HTMLElement>(`[data-nav-id="${activeSection}"]`);
+    if (!el) return;
+    const navRect = nav.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    if (elRect.top < navRect.top) {
+      nav.scrollTop -= navRect.top - elRect.top + 8;
+    } else if (elRect.bottom > navRect.bottom) {
+      nav.scrollTop += elRect.bottom - navRect.bottom + 8;
+    }
+  }, [activeSection]);
 
   const NavButton = ({ item }: { item: SidebarItem }) => {
     const isActive = activeSection === item.id;
@@ -59,6 +77,7 @@ export function PortfolioSidebar({
     return (
       <button
         type="button"
+        data-nav-id={item.id}
         onClick={() => handleSelect(item.id)}
         aria-current={isActive ? "page" : undefined}
         className={cn(
@@ -136,7 +155,7 @@ export function PortfolioSidebar({
           </h1>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4">
+        <nav ref={navRef} className="flex-1 overflow-y-auto p-4">
           <div className="space-y-2">
             {items.map((item) => (
               <motion.div key={item.id} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>

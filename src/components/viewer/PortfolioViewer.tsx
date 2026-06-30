@@ -219,15 +219,19 @@ export function PortfolioViewer({
             </Card>
           </motion.div>
 
-          {/* Portfolio Container */}
+          {/* Portfolio Container — bounded scroll box so the portfolio's own
+              sticky nav pins correctly. A clipping/transform card (the old
+              setup) silently breaks `position: sticky`. */}
           <motion.div
             key={selectedTemplate}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className={`${styles.portfolioContainer} ${getViewModeStyles()}`}
+            className={`rounded-lg border border-border shadow-sm overflow-hidden bg-card ${getViewModeStyles()}`}
           >
-            {renderTemplate()}
+            <div className="h-[calc(100vh-13rem)] overflow-y-auto">
+              {renderTemplate()}
+            </div>
           </motion.div>
 
           {/* Template Info */}

@@ -35,6 +35,7 @@ function minify(config: PortfolioConfig) {
   return {
     templateId: config.templateId,
     theme: config.theme,
+    layout: config.layout,
     showNav: config.showNav,
     blocks: config.blocks.map((b) => ({ type: b.type, enabled: b.enabled, variant: b.variant })),
   };

@@ -4,6 +4,7 @@ import { cn } from "../../ui/utils";
 import { ImageWithFallback } from "../../common/ImageWithFallback";
 import { StatGrid } from "../shared/StatGrid";
 import { computeStats } from "../shared/portfolioHelpers";
+import { PortfolioAvatar } from "./Avatar";
 import type { BlockComponent, BlockProps } from "./types";
 import type { ResolvedTheme } from "./theme";
 
@@ -16,6 +17,16 @@ function HeroCTAs({ theme }: { theme: ResolvedTheme }) {
       <Button asChild variant="outline" className={cn(theme.surfaceBorder, theme.pageText)}>
         <a href="#block-contact"><Mail className="w-4 h-4 mr-2" />Get in Touch</a>
       </Button>
+    </div>
+  );
+}
+
+/** Full-width cover banner, shown above the hero when the user has one. */
+function CoverBanner({ src }: { src: string }) {
+  return (
+    <div className="relative h-36 sm:h-48 md:h-56 rounded-3xl overflow-hidden shadow-lg">
+      <ImageWithFallback src={src} alt="Cover" className="w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
     </div>
   );
 }
@@ -34,11 +45,10 @@ function Centered({ data, theme }: BlockProps) {
   const s = heroStats(theme, true);
   return (
     <div className="text-center space-y-8">
-      {p.avatar !== undefined && (
-        <div className="mx-auto w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden ring-4 ring-[color:var(--pf-accent-soft)] shadow-xl">
-          <ImageWithFallback src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-        </div>
-      )}
+      {p.coverImage && <CoverBanner src={p.coverImage} />}
+      <div className="mx-auto w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden ring-4 ring-[color:var(--pf-accent-soft)] shadow-xl">
+        <PortfolioAvatar name={p.name} src={p.avatar} theme={theme} initialsClassName="text-5xl" />
+      </div>
       <div className="space-y-3">
         <h1 className={cn("text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight", theme.headingText)}>{p.name}</h1>
         {p.title && <p className={cn("text-xl", theme.accentText)}>{p.title}</p>}
@@ -55,6 +65,7 @@ function Split({ data, theme }: BlockProps) {
   const s = heroStats(theme, false);
   return (
     <div className="space-y-12">
+      {p.coverImage && <CoverBanner src={p.coverImage} />}
       <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
         <div className="space-y-6">
           <div className="space-y-3">
@@ -70,10 +81,10 @@ function Split({ data, theme }: BlockProps) {
           <HeroCTAs theme={theme} />
         </div>
         <div className="relative">
-          <div className="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto">
+          <div className="relative w-full max-w-[20rem] aspect-square mx-auto">
             <div className={cn("absolute -inset-4 rounded-3xl bg-gradient-to-r opacity-20 blur-xl", theme.accentGradient)} />
             <div className={cn("relative w-full h-full rounded-3xl overflow-hidden shadow-2xl", theme.mutedSurface)}>
-              <ImageWithFallback src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+              <PortfolioAvatar name={p.name} src={p.avatar} theme={theme} initialsClassName="text-6xl" />
             </div>
           </div>
         </div>
@@ -99,7 +110,7 @@ function Cover({ data, theme }: BlockProps) {
         </div>
         <div className="absolute left-1/2 -bottom-12 -translate-x-1/2">
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden ring-4 ring-white shadow-xl bg-gray-100">
-            <ImageWithFallback src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+            <PortfolioAvatar name={p.name} src={p.avatar} theme={theme} initialsClassName="text-4xl" />
           </div>
         </div>
       </div>
@@ -118,11 +129,9 @@ function Minimal({ data, theme }: BlockProps) {
   const p = data.personalInfo;
   return (
     <div className="text-center space-y-8 py-8">
-      {p.avatar !== undefined && (
-        <div className="mx-auto w-28 h-28 rounded-full overflow-hidden border border-current/10">
-          <ImageWithFallback src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-        </div>
-      )}
+      <div className="mx-auto w-28 h-28 rounded-full overflow-hidden border border-current/10">
+        <PortfolioAvatar name={p.name} src={p.avatar} theme={theme} initialsClassName="text-3xl" />
+      </div>
       <div className="space-y-4">
         <h1 className={cn("text-5xl sm:text-6xl font-light tracking-tight", theme.headingText)}>{p.name}</h1>
         <div className={cn("w-20 h-px mx-auto bg-gradient-to-r", theme.accentGradient)} />

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useReducedMotion } from "framer-motion";
 import { Home } from "lucide-react";
 import { cn } from "../ui/utils";
 import { PortfolioShell } from "./shared/PortfolioShell";
 import { PortfolioSidebar, type SidebarItem } from "./shared/PortfolioSidebar";
+import { PortfolioTopbar } from "./shared/PortfolioTopbar";
 import { BLOCK_REGISTRY, getBlockComponent } from "./blocks/registry";
 import { resolveTheme, buildNavTheme } from "./blocks/theme";
 import type { PortfolioConfig } from "./config/types";
@@ -14,8 +15,14 @@ interface PortfolioRendererProps {
   config: PortfolioConfig;
 }
 
-/** Track which section is in view for the nav highlight. */
-function useScrollSpy(ids: string[]): string {
+type SectionRefs = { current: Map<string, HTMLElement> };
+
+/**
+ * Track which section is in view for the nav highlight. Uses live element refs
+ * (not `document.getElementById`) so it works both on the page and when the
+ * renderer is portalled into an <iframe> (where `document` is the host doc).
+ */
+function useScrollSpy(sectionRefs: SectionRefs, ids: string[]): string {
   const key = ids.join(",");
   const [active, setActive] = useState(ids[0] ?? "");
 
@@ -23,20 +30,28 @@ function useScrollSpy(ids: string[]): string {
     if (!ids.length) return;
     setActive((prev) => (ids.includes(prev) ? prev : ids[0]));
 
-    const observer = new IntersectionObserver(
+    const els = ids
+      .map((id) => sectionRefs.current.get(id))
+      .filter((el): el is HTMLElement => !!el);
+    if (!els.length) return;
+
+    // Use the observer from the document that actually owns the elements so
+    // intersections are measured against the right viewport (e.g. the iframe).
+    const win = els[0].ownerDocument?.defaultView ?? window;
+    const IO = win.IntersectionObserver ?? window.IntersectionObserver;
+
+    const observer = new IO(
       (entries) => {
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]) setActive(visible[0].target.id.replace("block-", ""));
+        const id = visible[0]?.target.getAttribute("data-block");
+        if (id) setActive(id);
       },
-      { rootMargin: "-35% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+      { root: null, rootMargin: "-35% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
     );
 
-    ids.forEach((id) => {
-      const el = document.getElementById(`block-${id}`);
-      if (el) observer.observe(el);
-    });
+    els.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
@@ -57,7 +72,8 @@ export function PortfolioRenderer({ data, config }: PortfolioRendererProps) {
   );
 
   const navIds = useMemo(() => visibleBlocks.map((b) => b.type), [visibleBlocks]);
-  const active = useScrollSpy(navIds);
+  const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const active = useScrollSpy(sectionRefs, navIds);
 
   const navItems: SidebarItem[] = visibleBlocks.map((b) => {
     const def = BLOCK_REGISTRY[b.type];
@@ -69,15 +85,81 @@ export function PortfolioRenderer({ data, config }: PortfolioRendererProps) {
   });
 
   const handleNav = (id: string) => {
-    const el = document.getElementById(`block-${id}`);
-    el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    sectionRefs.current
+      .get(id)
+      ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   };
 
-  const showNav = config.showNav && navItems.length > 1;
+  const layout = config.layout ?? "sidebar";
+  const showNav = config.showNav && navItems.length > 1 && layout !== "minimal";
   const firstName = data.personalInfo.name?.split(" ")[0] || "Portfolio";
 
+  // The section stack is identical across layouts — only the surrounding shell
+  // (left rail / top bar / bare column) changes. Rendering it once keeps the
+  // scroll-spy refs and block order in a single place.
+  const sections = visibleBlocks.map((block, i) => {
+    const Block = getBlockComponent(block.type, block.variant);
+    const def = BLOCK_REGISTRY[block.type];
+    return (
+      <section
+        key={block.type}
+        id={`block-${block.type}`}
+        data-block={block.type}
+        ref={(el) => {
+          if (el) sectionRefs.current.set(block.type, el);
+          else sectionRefs.current.delete(block.type);
+        }}
+        className={cn("scroll-mt-24", i === 0 ? "pt-8 md:pt-12" : "pt-12 md:pt-20", "pb-4")}
+      >
+        <Block data={data} theme={theme} title={def.defaultTitle} />
+      </section>
+    );
+  });
+
+  const rootStyle = theme.vars as CSSProperties;
+
+  // --- Minimal: no nav, a narrow centred reading column with extra air. ---
+  if (layout === "minimal") {
+    return (
+      <div className={cn(theme.pageText)} style={rootStyle}>
+        <div className={cn("min-h-screen", theme.pageBg)}>
+          <div className="mx-auto w-full max-w-3xl px-5 sm:px-8 py-10 md:py-20">
+            {sections}
+            <div className="py-10" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Top bar: sticky horizontal nav above full-width stacked sections. ---
+  if (layout === "topbar") {
+    return (
+      <div className={cn(theme.pageText)} style={rootStyle}>
+        <div className={cn("min-h-screen", theme.pageBg)}>
+          {showNav && (
+            <PortfolioTopbar
+              items={navItems}
+              activeSection={active}
+              onSectionChange={handleNav}
+              theme={buildNavTheme(theme)}
+              title={firstName}
+            />
+          )}
+          <main>
+            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+              {sections}
+              <div className="py-10" />
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Sidebar (default): left rail + content column. ---
   return (
-    <div className={cn(theme.pageText)} style={theme.vars as CSSProperties}>
+    <div className={cn(theme.pageText)} style={rootStyle}>
       <PortfolioShell
         className={theme.pageBg}
         contentClassName="py-0"
@@ -93,19 +175,7 @@ export function PortfolioRenderer({ data, config }: PortfolioRendererProps) {
           ) : null
         }
       >
-        {visibleBlocks.map((block, i) => {
-          const Block = getBlockComponent(block.type, block.variant);
-          const def = BLOCK_REGISTRY[block.type];
-          return (
-            <section
-              key={block.type}
-              id={`block-${block.type}`}
-              className={cn("scroll-mt-24", i === 0 ? "pt-8 md:pt-12" : "pt-12 md:pt-20", "pb-4")}
-            >
-              <Block data={data} theme={theme} title={def.defaultTitle} />
-            </section>
-          );
-        })}
+        {sections}
         <div className="py-10" />
       </PortfolioShell>
     </div>

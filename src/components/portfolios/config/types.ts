@@ -53,10 +53,23 @@ export interface ThemeConfig {
   accent?: string;
 }
 
+/**
+ * Overall page structure. This is what makes templates *structurally* distinct
+ * (not just recolours):
+ *   - sidebar : left vertical rail + content column (classic).
+ *   - topbar  : sticky horizontal nav + full-width stacked sections.
+ *   - minimal : no nav, a narrow centred reading column.
+ */
+export type PortfolioLayout = "sidebar" | "topbar" | "minimal";
+
+export const ALL_LAYOUTS: readonly PortfolioLayout[] = ["sidebar", "topbar", "minimal"] as const;
+
 export interface PortfolioConfig {
   /** Which preset this config was derived from. */
   templateId: string;
   theme: ThemeConfig;
+  /** Page structure / navigation style. */
+  layout: PortfolioLayout;
   /** Ordered; rendered top-to-bottom. Disabled/empty blocks are skipped. */
   blocks: BlockConfig[];
   /** Show the sticky section nav (rail on desktop, top bar on mobile). */

@@ -1,4 +1,4 @@
-import { ALL_BLOCK_TYPES, CONFIG_VERSION } from "./types";
+import { ALL_BLOCK_TYPES, ALL_LAYOUTS, CONFIG_VERSION } from "./types";
 import type { BlockConfig, PortfolioConfig } from "./types";
 import { BLOCK_REGISTRY } from "../blocks/registry";
 import { getPreset } from "./presets";
@@ -62,6 +62,7 @@ export function mergeWithPreset(
       preset: stored.theme?.preset ?? preset.theme.preset,
       accent: stored.theme?.accent,
     },
+    layout: stored.layout && ALL_LAYOUTS.includes(stored.layout) ? stored.layout : preset.layout,
     showNav: typeof stored.showNav === "boolean" ? stored.showNav : preset.showNav,
     blocks,
   };
