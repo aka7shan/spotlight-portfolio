@@ -92,11 +92,12 @@ export function ViewerToolbar({
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
+              size="sm"
               onClick={onBackToGallery}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Gallery
+              <span className="hidden sm:inline">Back to Gallery</span>
             </Button>
 
             <div className="hidden sm:flex items-center gap-3">
@@ -129,9 +130,9 @@ export function ViewerToolbar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <Palette className="w-4 h-4 mr-2" />
-                  Switch Template
-                  <ChevronDown className="w-4 h-4 ml-2" />
+                  <Palette className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Switch Template</span>
+                  <ChevronDown className="w-4 h-4 ml-1 sm:ml-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -171,9 +172,11 @@ export function ViewerToolbar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <ViewModeIcon className="w-4 h-4 mr-2" />
-                  {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
-                  <ChevronDown className="w-4 h-4 ml-2" />
+                  <ViewModeIcon className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)}
+                  </span>
+                  <ChevronDown className="w-4 h-4 ml-1 sm:ml-2" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

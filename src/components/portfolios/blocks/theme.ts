@@ -73,11 +73,41 @@ export const THEME_PRESETS: Record<string, ThemePresetDef> = {
 
 export const DEFAULT_THEME_PRESET = "classic";
 
+export interface FontPresetDef {
+  id: string;
+  label: string;
+  /** A self-contained font stack — no web-font loading, so it's instant. */
+  stack: string;
+}
+
+/** Curated, system-safe font stacks the builder can switch between. */
+export const FONT_PRESETS: Record<string, FontPresetDef> = {
+  sans: {
+    id: "sans",
+    label: "Sans",
+    stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  },
+  serif: {
+    id: "serif",
+    label: "Serif",
+    stack: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+  },
+  mono: {
+    id: "mono",
+    label: "Mono",
+    stack: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+  },
+};
+
+export const DEFAULT_FONT = "sans";
+
 export interface ResolvedTheme {
   id: string;
   mode: ThemeMode;
   /** CSS custom properties to spread onto the renderer's root element. */
   vars: Record<string, string>;
+  /** Resolved font-family stack, applied to the renderer root. */
+  fontFamily: string;
   // Neutral surface/text tokens (Tailwind classes).
   pageBg: string;
   pageText: string;
@@ -159,10 +189,12 @@ export function resolveTheme(config: ThemeConfig): ResolvedTheme {
   const a1 = config.accent ? `#${normalizeHex(config.accent)}` : preset.accent[0];
   const a2 = config.accent ? lighten(a1, 0.25) : preset.accent[1];
   const rgb1 = hexToRgb(a1);
+  const font = FONT_PRESETS[config.font ?? DEFAULT_FONT] ?? FONT_PRESETS[DEFAULT_FONT];
 
   return {
     id: preset.id,
     mode: preset.mode,
+    fontFamily: font.stack,
     vars: {
       "--pf-accent": a1,
       "--pf-accent-2": a2,

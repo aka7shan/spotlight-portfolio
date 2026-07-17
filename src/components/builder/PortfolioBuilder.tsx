@@ -11,6 +11,8 @@ import {
   Link2,
   Palette,
   Check,
+  Type,
+  Layers,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -22,10 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { cn } from "../ui/utils";
 import { PortfolioRenderer } from "../portfolios/PortfolioRenderer";
 import { BLOCK_REGISTRY } from "../portfolios/blocks/registry";
-import { THEME_PRESETS, resolveTheme } from "../portfolios/blocks/theme";
+import { THEME_PRESETS, FONT_PRESETS, resolveTheme } from "../portfolios/blocks/theme";
 import { localStorageConfigStore } from "../portfolios/config/store";
 import { getPreset } from "../portfolios/config/presets";
 import { encodeConfigToHash } from "../portfolios/config/share";
@@ -223,104 +226,132 @@ export function PortfolioBuilder({ data, config, onChange, user, onClose }: Port
 
       {/* Body: controls + live preview */}
       <div className="flex flex-1 min-h-0">
-        {/* Control panel */}
-        <aside className="w-[340px] shrink-0 overflow-y-auto border-r p-4 space-y-4">
-          {/* Theme */}
-          <div className="rounded-xl border p-4 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Layout</Label>
-              <Select value={config.layout} onValueChange={(v) => patch({ layout: v as PortfolioLayout })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ALL_LAYOUTS.map((l) => (
-                    <SelectItem key={l} value={l}>{LAYOUT_LABELS[l]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* Control panel — split into tabs so each view fits without scrolling */}
+        <aside className="w-[340px] shrink-0 border-r flex flex-col min-h-0">
+          <Tabs defaultValue="design" className="flex flex-1 flex-col min-h-0 gap-0">
+            <div className="p-3 pb-2 shrink-0">
+              <TabsList className="w-full">
+                <TabsTrigger value="design" className="flex-1">
+                  <Palette className="w-4 h-4" /> Design
+                </TabsTrigger>
+                <TabsTrigger value="sections" className="flex-1">
+                  <Layers className="w-4 h-4" /> Sections
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Color theme</Label>
-              <Select value={config.theme.preset} onValueChange={(v) => patchTheme({ preset: v, accent: undefined })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.values(THEME_PRESETS).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Accent color</Label>
-              <div className="flex flex-wrap items-center gap-2">
-                {ACCENT_SWATCHES.map((c) => {
-                  const active = currentAccent.toLowerCase() === c.toLowerCase();
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      aria-label={`Accent ${c}`}
-                      onClick={() => patchTheme({ accent: c })}
-                      className={cn(
-                        "w-7 h-7 rounded-full border flex items-center justify-center transition-transform hover:scale-110",
-                        active && "ring-2 ring-offset-2 ring-foreground",
-                      )}
-                      style={{ backgroundColor: c }}
-                    >
-                      {active && <Check className="w-3.5 h-3.5 text-white" />}
-                    </button>
-                  );
-                })}
-                <label className="w-7 h-7 rounded-full border overflow-hidden cursor-pointer relative" title="Custom color">
-                  <span className="absolute inset-0 bg-gradient-to-br from-pink-500 via-yellow-400 to-blue-500" />
-                  <input
-                    type="color"
-                    value={currentAccent}
-                    onChange={(e) => patchTheme({ accent: e.target.value })}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                </label>
+            {/* DESIGN */}
+            <TabsContent value="design" className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 mt-0 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Layout</Label>
+                  <Select value={config.layout} onValueChange={(v) => patch({ layout: v as PortfolioLayout })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ALL_LAYOUTS.map((l) => (
+                        <SelectItem key={l} value={l}>{LAYOUT_LABELS[l]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Theme</Label>
+                  <Select value={config.theme.preset} onValueChange={(v) => patchTheme({ preset: v, accent: undefined })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.values(THEME_PRESETS).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              {config.theme.accent && (
-                <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => patchTheme({ accent: undefined })}>
-                  Reset to theme default
-                </Button>
-              )}
-            </div>
 
-            <label className={cn("flex items-center gap-2", config.layout === "minimal" ? "opacity-50" : "cursor-pointer")}>
-              <Checkbox
-                checked={config.showNav && config.layout !== "minimal"}
-                disabled={config.layout === "minimal"}
-                onCheckedChange={(v) => patch({ showNav: v === true })}
-              />
-              <span className="text-sm">
-                Show section navigation
-                {config.layout === "minimal" && (
-                  <span className="ml-1 text-xs text-muted-foreground">(off in Minimal)</span>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5" /> Font
+                </Label>
+                <Select value={config.theme.font ?? "sans"} onValueChange={(v) => patchTheme({ font: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.values(FONT_PRESETS).map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        <span style={{ fontFamily: f.stack }}>{f.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Accent color</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {ACCENT_SWATCHES.map((c) => {
+                    const active = currentAccent.toLowerCase() === c.toLowerCase();
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        aria-label={`Accent ${c}`}
+                        onClick={() => patchTheme({ accent: c })}
+                        className={cn(
+                          "w-7 h-7 rounded-full border flex items-center justify-center transition-transform hover:scale-110",
+                          active && "ring-2 ring-offset-2 ring-foreground",
+                        )}
+                        style={{ backgroundColor: c }}
+                      >
+                        {active && <Check className="w-3.5 h-3.5 text-white" />}
+                      </button>
+                    );
+                  })}
+                  <label className="w-7 h-7 rounded-full border overflow-hidden cursor-pointer relative" title="Custom color">
+                    <span className="absolute inset-0 bg-gradient-to-br from-pink-500 via-yellow-400 to-blue-500" />
+                    <input
+                      type="color"
+                      value={currentAccent}
+                      onChange={(e) => patchTheme({ accent: e.target.value })}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </label>
+                </div>
+                {config.theme.accent && (
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => patchTheme({ accent: undefined })}>
+                    Reset to theme default
+                  </Button>
                 )}
-              </span>
-            </label>
-          </div>
+              </div>
 
-          {/* Sections */}
-          <div className="rounded-xl border p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Sections — drag to reorder</Label>
-            </div>
-            <Reorder.Group axis="y" values={config.blocks} onReorder={(blocks) => patch({ blocks })} className="space-y-2">
-              {config.blocks.map((block) => (
-                <BlockRow
-                  key={block.type}
-                  block={block}
-                  data={data}
-                  onToggle={(enabled) => updateBlock(block.type, { enabled })}
-                  onVariant={(variant) => updateBlock(block.type, { variant })}
+              <label className={cn("flex items-center gap-2", config.layout === "minimal" ? "opacity-50" : "cursor-pointer")}>
+                <Checkbox
+                  checked={config.showNav && config.layout !== "minimal"}
+                  disabled={config.layout === "minimal"}
+                  onCheckedChange={(v) => patch({ showNav: v === true })}
                 />
-              ))}
-            </Reorder.Group>
-          </div>
+                <span className="text-sm">
+                  Show section navigation
+                  {config.layout === "minimal" && (
+                    <span className="ml-1 text-xs text-muted-foreground">(off in Minimal)</span>
+                  )}
+                </span>
+              </label>
+            </TabsContent>
+
+            {/* SECTIONS */}
+            <TabsContent value="sections" className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 mt-0 space-y-2">
+              <p className="text-xs text-muted-foreground">Drag to reorder · toggle the eye to show/hide</p>
+              <Reorder.Group axis="y" values={config.blocks} onReorder={(blocks) => patch({ blocks })} className="space-y-2">
+                {config.blocks.map((block) => (
+                  <BlockRow
+                    key={block.type}
+                    block={block}
+                    data={data}
+                    onToggle={(enabled) => updateBlock(block.type, { enabled })}
+                    onVariant={(variant) => updateBlock(block.type, { variant })}
+                  />
+                ))}
+              </Reorder.Group>
+            </TabsContent>
+          </Tabs>
         </aside>
 
         {/* Live preview */}

@@ -51,6 +51,8 @@ export interface ThemeConfig {
    * by swapping the CSS variables the renderer paints with.
    */
   accent?: string;
+  /** Optional font-family preset id (see FONT_PRESETS); defaults to "sans". */
+  font?: string;
 }
 
 /**

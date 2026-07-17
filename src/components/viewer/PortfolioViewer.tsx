@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 import { motion } from "framer-motion";
-import { Download, Share2, Eye, Star, ExternalLink, Info, Wand2 } from "lucide-react";
+import { Download, Share2, Star, ExternalLink, Info, Wand2, Minimize2 } from "lucide-react";
+import { Button } from "../ui/button";
+import { cn } from "../ui/utils";
 import { ViewerToolbar } from "./ViewerToolbar";
 import { TEMPLATES } from "../portfolios/registry";
 import { PortfolioRenderer } from "../portfolios/PortfolioRenderer";
@@ -95,33 +95,33 @@ export function PortfolioViewer({
     }
   };
 
+  // True fullscreen: an overlay above the app's global (fixed) navbar so the
+  // template — including its own sticky section nav — fills the screen. The
+  // exit control floats bottom-right where it can't collide with that nav.
   if (isFullscreen) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Fullscreen Exit Button */}
-        <div className="fixed top-4 right-4 z-50">
-          <Button
-            onClick={() => setIsFullscreen(false)}
-            variant="outline"
-            size="sm"
-            className={styles.exitFullscreenButton}
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            Exit Fullscreen
-          </Button>
-        </div>
-        
-        {/* Portfolio Content */}
-        <div className={getViewModeStyles()}>
-          {renderTemplate()}
-        </div>
+      <div className="fixed inset-0 z-[60] bg-background overflow-y-auto overscroll-contain">
+        {renderTemplate()}
+        <Button
+          onClick={() => setIsFullscreen(false)}
+          size="sm"
+          className="fixed bottom-5 right-5 z-[61] gap-2 rounded-full px-4 shadow-lg bg-foreground text-background hover:opacity-90"
+        >
+          <Minimize2 className="w-4 h-4" />
+          Exit fullscreen
+        </Button>
       </div>
     );
   }
 
+  const previewNote = isPreviewMode
+    ? `Sample data on the ${currentTemplate?.name} template. Complete your profile to see your own.`
+    : `Your data on the ${currentTemplate?.name} template. Switch templates from the top bar.`;
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top Navigation Bar */}
+    // App-shell: pinned below the global navbar (h-16) so the page itself never
+    // scrolls — only the preview does. This kills the old double/outer scroll.
+    <div className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-muted/20">
       <ViewerToolbar
         currentTemplate={currentTemplate}
         selectedTemplate={selectedTemplate}
@@ -139,161 +139,104 @@ export function PortfolioViewer({
         styles={styles}
       />
 
-      {/* Template Preview Area */}
-      <div className={styles.previewArea}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {customizing ? (
-            <PortfolioBuilder
-              data={portfolioData}
-              config={config}
-              onChange={setConfig}
-              user={user}
-              onClose={() => setCustomizing(false)}
-            />
-          ) : (
-          <>
-          {/* Info Banner */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
-            <Card className={`border-2 ${
-              isPreviewMode 
-                ? 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/20' 
-                : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20'
-            }`}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${
-                    isPreviewMode 
-                      ? 'from-purple-500 to-pink-500' 
-                      : 'from-blue-500 to-purple-500'
-                  } flex items-center justify-center`}>
-                    {isPreviewMode ? <Info className="w-5 h-5 text-white" /> : <Star className="w-5 h-5 text-white" />}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className={`font-semibold mb-1 ${
-                      isPreviewMode 
-                        ? 'text-purple-800 dark:text-purple-200' 
-                        : 'text-blue-800 dark:text-blue-200'
-                    }`}>
-                      {isPreviewMode ? 'Template Preview' : 'Portfolio Preview'}
-                    </h3>
-                    <p className={`text-sm ${
-                      isPreviewMode 
-                        ? 'text-purple-700 dark:text-purple-300' 
-                        : 'text-blue-700 dark:text-blue-300'
-                    }`}>
-                      {isPreviewMode 
-                        ? `This is a preview of the ${currentTemplate?.name} template with sample data. ${user ? 'Complete your profile and upload your data to see your actual information here.' : 'Sign up and create a profile to upload your own data.'}`
-                        : `This is how your portfolio looks with the ${currentTemplate?.name} template. Switch templates above to see your data in different designs.`
-                      }
-                    </p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      onClick={() => setCustomizing(true)}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90"
-                    >
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Customize
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsFullscreen(true)}
-                      className={`${
-                        isPreviewMode
-                          ? 'border-purple-200 text-purple-700 hover:bg-purple-100'
-                          : 'border-blue-200 text-blue-700 hover:bg-blue-100'
-                      }`}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View Fullscreen
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+        {/* Meta panel — short strip on top (mobile), sidebar on the left (desktop) */}
+        <aside className="shrink-0 w-full lg:w-80 xl:w-96 lg:h-full overflow-y-auto border-b lg:border-b-0 lg:border-r border-border bg-card p-3 sm:p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <div
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-r",
+                isPreviewMode ? "from-purple-500 to-pink-500" : "from-blue-500 to-purple-500",
+              )}
+            >
+              {isPreviewMode ? <Info className="w-4 h-4 text-white" /> : <Star className="w-4 h-4 text-white" />}
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold leading-tight">
+                {isPreviewMode ? "Template Preview" : "Portfolio Preview"}
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{previewNote}</p>
+            </div>
+          </div>
 
-          {/* Portfolio Container — bounded scroll box so the portfolio's own
-              sticky nav pins correctly. A clipping/transform card (the old
-              setup) silently breaks `position: sticky`. */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              onClick={() => setCustomizing(true)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90"
+            >
+              <Wand2 className="w-4 h-4 mr-1.5" />
+              Customize
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setIsFullscreen(true)}>
+              <ExternalLink className="w-4 h-4 mr-1.5" />
+              Fullscreen
+            </Button>
+          </div>
+
+          {/* Template details — hidden on the smallest screens to stay short */}
+          <div className="hidden sm:block rounded-lg border border-border p-3 space-y-3">
+            <div className="flex items-center gap-2.5">
+              {currentTemplate && (() => {
+                const CurrentIcon = currentTemplate.icon;
+                return (
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <CurrentIcon className="w-4 h-4 text-primary" />
+                  </div>
+                );
+              })()}
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{currentTemplate?.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{currentTemplate?.category}</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isPreviewMode ? "Preview mode with sample data." : "Your profile data is synced automatically."}
+              {!isPreviewMode && user && (
+                <Button variant="link" onClick={onEditProfile} className="p-0 ml-1 h-auto text-xs align-baseline">
+                  Edit data
+                </Button>
+              )}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportData}>
+                <Download className="w-4 h-4 mr-1.5" />
+                Export
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="w-4 h-4 mr-1.5" />
+                Share
+              </Button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Preview — fills remaining space; only this scrolls */}
+        <main className="flex-1 min-w-0 min-h-0 p-2 sm:p-3 lg:p-4">
           <motion.div
             key={selectedTemplate}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className={`rounded-lg border border-border shadow-sm overflow-hidden bg-card ${getViewModeStyles()}`}
+            className={cn(
+              "h-full mx-auto rounded-xl border border-border shadow-sm overflow-hidden bg-card",
+              getViewModeStyles(),
+            )}
           >
-            <div className="h-[calc(100vh-13rem)] overflow-y-auto">
-              {renderTemplate()}
-            </div>
+            <div className="h-full overflow-y-auto">{renderTemplate()}</div>
           </motion.div>
-
-          {/* Template Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-8 mb-16"
-          >
-            <Card>
-              <CardContent className="p-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-2">Current Template</h4>
-                    <div className="flex items-center gap-3">
-                      {currentTemplate && (() => {
-                        const CurrentIcon = currentTemplate.icon;
-                        return <CurrentIcon className="w-5 h-5 text-primary" />;
-                      })()}
-                      <div>
-                        <p className="font-medium">{currentTemplate?.name}</p>
-                        <p className="text-sm text-muted-foreground">{currentTemplate?.category}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Data Source</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {isPreviewMode 
-                        ? 'Preview mode with sample data.' 
-                        : 'Your profile data is automatically synced.'
-                      }
-                      {!isPreviewMode && user && (
-                        <Button variant="link" onClick={onEditProfile} className="p-0 ml-1 h-auto">
-                          Edit profile data
-                        </Button>
-                      )}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Quick Actions</h4>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={handleExportData}>
-                        <Download className="w-4 h-4 mr-1" />
-                        Export
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleShare}>
-                        <Share2 className="w-4 h-4 mr-1" />
-                        Share
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          </>
-          )}
-        </div>
+        </main>
       </div>
+
+      {customizing && (
+        <PortfolioBuilder
+          data={portfolioData}
+          config={config}
+          onChange={setConfig}
+          user={user}
+          onClose={() => setCustomizing(false)}
+        />
+      )}
     </div>
   );
 }

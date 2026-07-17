@@ -116,7 +116,7 @@ export function PortfolioRenderer({ data, config }: PortfolioRendererProps) {
     );
   });
 
-  const rootStyle = theme.vars as CSSProperties;
+  const rootStyle = { ...theme.vars, fontFamily: theme.fontFamily } as CSSProperties;
 
   // --- Minimal: no nav, a narrow centred reading column with extra air. ---
   if (layout === "minimal") {

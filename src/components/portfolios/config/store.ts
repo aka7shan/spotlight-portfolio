@@ -61,6 +61,7 @@ export function mergeWithPreset(
     theme: {
       preset: stored.theme?.preset ?? preset.theme.preset,
       accent: stored.theme?.accent,
+      font: stored.theme?.font ?? preset.theme.font,
     },
     layout: stored.layout && ALL_LAYOUTS.includes(stored.layout) ? stored.layout : preset.layout,
     showNav: typeof stored.showNav === "boolean" ? stored.showNav : preset.showNav,
