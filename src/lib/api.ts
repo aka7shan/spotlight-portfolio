@@ -258,7 +258,10 @@ export interface CvParseExtracted {
   experience?: Array<{
     position: string;
     company: string;
-    startDate: string;
+    // Optional: the backend parse schema no longer forces a date, so a CV
+    // that omits it (e.g. a cert/role with no listed date) still parses.
+    // Still required at save time — validateUserForSave flags it.
+    startDate?: string;
     endDate?: string;
     isPresent?: boolean;
     description?: string;
@@ -268,7 +271,7 @@ export interface CvParseExtracted {
   education?: Array<{
     degree: string;
     institution: string;
-    startDate: string;
+    startDate?: string;
     endDate?: string;
     isPresent?: boolean;
     gpa?: string;
@@ -291,7 +294,7 @@ export interface CvParseExtracted {
   certifications?: Array<{
     name: string;
     issuer: string;
-    startDate: string;
+    startDate?: string;
     endDate?: string;
     isPresent?: boolean;
     credentialId?: string;
@@ -301,7 +304,7 @@ export interface CvParseExtracted {
   achievements?: Array<{
     title: string;
     description?: string;
-    startDate: string;
+    startDate?: string;
     organization?: string;
     link?: string;
   }>;

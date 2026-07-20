@@ -206,6 +206,33 @@ function describeCount<T>(arr: T[] | undefined | null, singular: string): string
   return `${n} ${singular}${n === 1 ? "" : "s"}`;
 }
 
+/**
+ * How many entries in a section were parsed WITHOUT the start date that
+ * the save-time validator still requires. Surfaced as a gentle heads-up
+ * in the row so the user isn't surprised by a validation error after
+ * applying. Sections with no required date (skills, projects, languages)
+ * always return 0.
+ */
+function countEntriesMissingDate(
+  sectionId: SectionId,
+  e: CvParseExtracted,
+): number {
+  const missing = (arr: Array<{ startDate?: string }> | undefined): number =>
+    (arr ?? []).filter((x) => !x.startDate || x.startDate.trim() === "").length;
+  switch (sectionId) {
+    case "experience":
+      return missing(e.experience);
+    case "education":
+      return missing(e.education);
+    case "certifications":
+      return missing(e.certifications);
+    case "achievements":
+      return missing(e.achievements);
+    default:
+      return 0;
+  }
+}
+
 export function CvReviewDialog({
   open,
   onOpenChange,
@@ -340,6 +367,9 @@ export function CvReviewDialog({
                 const enabled = section.hasExtracted(result.extracted);
                 const checked = selection[section.id];
                 const Icon = section.icon;
+                const missingDates = enabled
+                  ? countEntriesMissingDate(section.id, result.extracted)
+                  : 0;
                 return (
                   <label
                     key={section.id}
@@ -390,6 +420,16 @@ export function CvReviewDialog({
                           </div>
                         </div>
                       </div>
+                      {missingDates > 0 && (
+                        <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-700">
+                          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                          <span>
+                            {missingDates}{" "}
+                            {missingDates === 1 ? "entry has" : "entries have"} no
+                            date — add it in the {section.label} tab before saving.
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </label>
                 );
@@ -467,7 +507,10 @@ function buildPartial(
     out.experience = extracted.experience.map((e) => ({
       position: e.position,
       company: e.company,
-      startDate: e.startDate,
+      // Coerce a missing date to "" — keeps the User type happy and lets
+      // validateUserForSave surface it as a required-field error the user
+      // completes in the section tab before saving.
+      startDate: e.startDate ?? "",
       endDate: e.endDate,
       isPresent: e.isPresent ?? false,
       description: e.description ?? "",
@@ -480,7 +523,7 @@ function buildPartial(
     out.education = extracted.education.map((e) => ({
       degree: e.degree,
       institution: e.institution,
-      startDate: e.startDate,
+      startDate: e.startDate ?? "",
       endDate: e.endDate,
       isPresent: e.isPresent,
       gpa: e.gpa,
@@ -509,7 +552,7 @@ function buildPartial(
     out.certifications = extracted.certifications.map((c) => ({
       name: c.name,
       issuer: c.issuer,
-      startDate: c.startDate,
+      startDate: c.startDate ?? "",
       endDate: c.endDate,
       isPresent: c.isPresent,
       credentialId: c.credentialId,
@@ -522,7 +565,7 @@ function buildPartial(
     out.achievements = extracted.achievements.map((a) => ({
       title: a.title,
       description: a.description ?? "",
-      startDate: a.startDate,
+      startDate: a.startDate ?? "",
       organization: a.organization,
       link: a.link,
     }));
